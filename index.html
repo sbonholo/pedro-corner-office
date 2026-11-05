@@ -273,6 +273,7 @@ canvas.floor{display:block;width:100%;min-width:720px;aspect-ratio:1000/430;heig
 .tut-card .btn.memo:hover:not(:disabled){color:var(--memo);filter:none}
 .tut-card .btn:focus-visible{outline-color:var(--memo-ink)}
 @media (prefers-reduced-motion: reduce){.tut-hl{transition:none}}
+.err-toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:1000;width:max-content;max-width:calc(100% - 32px);min-height:44px;padding:10px 18px;border:0;border-radius:99px;background:var(--ink);color:var(--paper);font:500 14px/1.3 var(--f-body);box-shadow:0 6px 24px rgba(0,0,0,.25);cursor:pointer}
 /* ---------- phones / touch: 44px tap targets, 12px minimum text ---------- */
 @media (max-width:600px),(pointer:coarse){
   .btn,.btn.sm{min-height:44px}
@@ -289,6 +290,22 @@ canvas.floor{display:block;width:100%;min-width:720px;aspect-ratio:1000/430;heig
   .chart text{font-size:13px}
 }
 </style>
+<script>
+/* Friendly crash toast: any uncaught error or rejected promise shows one small "tap to reload" bar. */
+(()=>{
+  let shown=false;
+  function show(){
+    if(shown||!document.body)return;shown=true;
+    const b=document.createElement('button');b.type='button';b.className='err-toast';b.setAttribute('role','alert');
+    b.textContent='Something went wrong – tap to reload';
+    b.addEventListener('click',()=>location.reload());
+    document.body.appendChild(b);
+  }
+  const benign=m=>/ResizeObserver loop/i.test(String(m||''));
+  window.onerror=(msg)=>{if(!benign(msg))show();};
+  window.addEventListener('unhandledrejection',e=>{if(!benign(e&&e.reason&&e.reason.message))show();});
+})();
+</script>
 </head>
 <body>
 
