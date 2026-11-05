@@ -1,0 +1,1351 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Corner Office</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: sticky ticker bar; the org chart is the hero (left), the control desk sits right; ledger, milestones and log below. Memo-yellow marks anything that needs a decision. */
+:root{
+  --paper:#F3F5FA; --surface:#FFFFFF; --sunk:#E9EDF5; --ink:#14203A; --muted:#5A6680; --line:#D7DDEA;
+  --accent:#2445D6; --accent-soft:#E3E9FF; --on-accent:#FFFFFF;
+  --memo:#FFD84A; --memo-ink:#2B2200;
+  --good:#16804F; --bad:#C23A3A; --warn:#B4741A;
+  --f-display:'Bricolage Grotesque','Avenir Next','Segoe UI',system-ui,sans-serif;
+  --f-body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0D1220; --surface:#151C2F; --sunk:#10172A; --ink:#E6EBF7; --muted:#95A1BC; --line:#27304A;
+  --accent:#8199FF; --accent-soft:#1D2750; --on-accent:#0D1220;
+  --good:#3BC487; --bad:#FF7B7B; --warn:#F0B24A; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --paper:#0D1220; --surface:#151C2F; --sunk:#10172A; --ink:#E6EBF7; --muted:#95A1BC; --line:#27304A;
+  --accent:#8199FF; --accent-soft:#1D2750; --on-accent:#0D1220;
+  --good:#3BC487; --bad:#FF7B7B; --warn:#F0B24A; color-scheme:dark;}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h2{font-size:17px;font-weight:700}
+h3{font-size:15px;font-weight:700}
+.eyebrow,.lbl{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.num{font-variant-numeric:tabular-nums}
+.good{color:var(--good)} .bad{color:var(--bad)} .warn{color:var(--warn)} .muted{color:var(--muted)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;font-weight:500;font-size:13px;white-space:nowrap}
+.btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.primary:hover:not(:disabled){color:var(--on-accent);filter:brightness(1.08)}
+.btn.memo{background:var(--memo);border-color:var(--memo);color:var(--memo-ink);font-weight:600}
+.btn.memo:hover:not(:disabled){color:var(--memo-ink);filter:brightness(1.04)}
+.btn.sm{padding:3px 9px;font-size:12px}
+.btn.danger{color:var(--bad)}
+
+/* ---------- top bar ---------- */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;padding-block:10px}
+.brand{display:flex;flex-direction:column;min-width:0;margin-right:auto}
+.brand b{font-family:var(--f-display);font-size:20px;font-weight:800;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand span{color:var(--muted);font-size:12px}
+.tick{display:flex;flex-direction:column}
+.tick b{font-family:var(--f-display);font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15}
+.run{font-size:14px;padding:9px 16px}
+@media (max-width:640px){.top .wrap{gap:8px 16px}.brand{flex-basis:100%}.tick b{font-size:16px}.run{margin-left:auto}}
+
+/* ---------- layout ---------- */
+main.wrap{padding-block:18px 56px;display:flex;flex-direction:column;gap:18px}
+.grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:1000px){.grid{grid-template-columns:minmax(0,1fr)}}
+.col{display:flex;flex-direction:column;gap:18px;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0}
+.panel>header{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+
+/* ---------- memo (events) ---------- */
+.memo-card{background:var(--memo);color:var(--memo-ink);border-radius:var(--r);padding:16px 18px;display:grid;gap:10px;box-shadow:0 1px 0 rgba(0,0,0,.08)}
+.memo-card .lbl{color:var(--memo-ink);opacity:.7}
+.memo-card h2{font-size:22px}
+.memo-card p{margin:0;max-width:70ch}
+.opts{display:flex;flex-wrap:wrap;gap:10px}
+.opt{background:rgba(255,255,255,.55);border:1px solid rgba(43,34,0,.25);border-radius:8px;padding:9px 12px;text-align:left;color:var(--memo-ink);display:flex;flex-direction:column;gap:2px;max-width:340px}
+.opt b{font-weight:600}
+.opt small{font-size:12px;opacity:.85}
+.opt:hover{background:rgba(255,255,255,.85)}
+.opt:focus-visible{outline-color:var(--memo-ink)}
+
+/* ---------- org chart ---------- */
+.org{display:flex;flex-direction:column;align-items:center;gap:0}
+.node{border:1px solid var(--line);border-radius:8px;padding:8px 12px;background:var(--surface);display:flex;flex-direction:column;align-items:flex-start;min-width:0}
+.ceo{background:var(--ink);color:var(--paper);border-color:var(--ink);align-items:center;padding:8px 22px}
+.ceo .lbl{color:var(--paper);opacity:.7}
+.ceo b{font-family:var(--f-display);font-size:16px}
+.stem{width:2px;height:16px;background:var(--line)}
+.execs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:100%;max-width:560px}
+.slot{border:1px dashed var(--line);border-radius:8px;padding:9px 11px;display:flex;flex-direction:column;gap:4px;min-width:0;background:var(--surface)}
+.slot.filled{border-style:solid;background:var(--accent-soft);border-color:transparent}
+.slot .who{font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slot .what{font-size:12px;color:var(--muted);line-height:1.35}
+.slot .act{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:2px}
+.hint{font-size:11.5px;color:var(--muted)}
+.depts{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;width:100%;padding-top:16px}
+.depts::before{content:"";position:absolute;top:0;left:12.5%;right:12.5%;height:2px;background:var(--line)}
+.dept{position:relative;border:1px solid var(--line);border-radius:var(--r);padding:11px;display:flex;flex-direction:column;gap:9px;min-width:0;background:var(--surface)}
+.dept::before{content:"";position:absolute;top:-17px;left:50%;width:2px;height:16px;background:var(--line)}
+@media (max-width:1180px) and (min-width:1001px),(max-width:760px){.depts{grid-template-columns:repeat(2,minmax(0,1fr))}.depts::before,.dept::before{display:none}}
+@media (max-width:440px){.depts{grid-template-columns:minmax(0,1fr)}.execs{grid-template-columns:minmax(0,1fr)}}
+.dept h3{display:flex;flex-direction:column;gap:1px}
+.dept .out{font-family:var(--f-mono);font-size:11.5px;color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:4px;min-height:20px}
+.chip{background:var(--sunk);border-radius:99px;padding:1px 8px;font-size:11.5px;white-space:nowrap}
+.dots{display:flex;flex-wrap:wrap;gap:3px;min-height:9px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--ink)}
+.dot.c{background:var(--muted);opacity:.6}
+.dot.l{background:transparent;border:2px solid var(--warn)}
+.more{font-size:11px;color:var(--muted);line-height:9px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.rl{display:flex;flex-direction:column;font-size:12.5px;font-weight:500;min-width:0}
+.rl small{font-weight:400;color:var(--muted);font-size:11px}
+.step{display:flex;align-items:center;border:1px solid var(--line);border-radius:7px;overflow:hidden;flex:none}
+.step button{border:0;background:transparent;padding:3px 8px;font-size:14px;line-height:1.2}
+.step button:hover:not(:disabled){background:var(--accent-soft);color:var(--accent)}
+.step button:disabled{opacity:.35;cursor:not-allowed}
+.step output{min-width:26px;text-align:center;font-family:var(--f-mono);font-size:12.5px;border-inline:1px solid var(--line);padding:3px 4px}
+.step .x5{font-size:11px;font-family:var(--f-mono)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin-top:12px}
+.legend i{display:inline-block;vertical-align:middle;margin-right:5px}
+
+/* ---------- levers ---------- */
+.lever{display:grid;gap:4px;padding-block:8px;border-bottom:1px solid var(--line)}
+.lever:last-of-type{border-bottom:0}
+.lever .row b{font-family:var(--f-display);font-size:17px;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.proj{background:var(--sunk);border-radius:8px;padding:10px 12px;font-size:12.5px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+.proj div{display:flex;flex-direction:column;min-width:0}
+.proj b{font-family:var(--f-mono);font-size:13px;font-weight:500}
+
+/* ---------- advice / voices ---------- */
+.advice{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.advice li{display:grid;grid-template-columns:8px minmax(0,1fr);gap:10px;align-items:start;font-size:13px}
+.advice li::before{content:"";width:8px;height:8px;border-radius:2px;margin-top:6px;background:var(--accent)}
+.advice li.w::before{background:var(--warn)}
+.advice li.b::before{background:var(--bad)}
+.voices{display:grid;gap:8px;margin-top:12px}
+.voice{border-left:3px solid var(--line);padding:2px 0 2px 10px;font-size:13px}
+.voice span{display:block;color:var(--muted);font-size:11.5px}
+
+/* ---------- stats & ledger ---------- */
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.kpi{display:flex;flex-direction:column;min-width:0}
+.kpi b{font-family:var(--f-display);font-size:19px;font-variant-numeric:tabular-nums}
+.meter{height:5px;border-radius:9px;background:var(--sunk);overflow:hidden;margin-top:4px}
+.meter i{display:block;height:100%;background:var(--accent)}
+.ledger{width:100%;border-collapse:collapse;font-size:13px}
+.ledger td{padding:4px 0;border-bottom:1px dashed var(--line)}
+.ledger td:last-child{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.ledger tr.tot td{border-bottom:0;border-top:2px solid var(--ink);font-weight:600;padding-top:6px}
+.actions{display:grid;gap:8px;margin-top:14px}
+.actions .row{padding-block:6px;border-top:1px solid var(--line)}
+.actions .rl{font-size:13px}
+
+/* ---------- lower ---------- */
+.lower{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:1000px){.lower{grid-template-columns:minmax(0,1fr)}}
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font-family:var(--f-mono);font-size:10px}
+.chart .grid-l{stroke:var(--line);stroke-width:1}
+.chart .rev{stroke:var(--accent);fill:none;stroke-width:2.2}
+.chart .exp{stroke:var(--bad);fill:none;stroke-width:1.6;stroke-dasharray:4 3}
+.chart .area{fill:var(--accent);opacity:.1}
+.chart .end{fill:var(--accent)}
+.ms{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.ms li{display:flex;gap:10px;align-items:center;font-size:13px;color:var(--muted)}
+.ms li i{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--line);flex:none;display:grid;place-items:center;font-style:normal;font-size:11px}
+.ms li.done{color:var(--ink)}
+.ms li.done i{background:var(--good);border-color:var(--good);color:var(--surface)}
+.log{list-style:none;margin:0;padding:0;display:grid;gap:5px;max-height:320px;overflow:auto;font-size:12.5px}
+.log li{display:grid;grid-template-columns:62px minmax(0,1fr);gap:8px}
+.log li span{font-family:var(--f-mono);font-size:11px;color:var(--muted);padding-top:1px}
+.log li.good b{color:var(--good);font-weight:500}
+.log li.bad b{color:var(--bad);font-weight:500}
+.log li b{font-weight:400}
+details.how summary{cursor:pointer;font-family:var(--f-display);font-weight:700;font-size:15px}
+details.how ul{margin:10px 0 0;padding-left:18px;display:grid;gap:4px;max-width:80ch}
+
+/* ---------- setup ---------- */
+.setup{padding-block:40px 64px;display:grid;gap:28px}
+.hero h1{font-size:clamp(44px,8vw,88px);font-weight:800;line-height:.95;letter-spacing:-.03em}
+.hero h1 em{font-style:normal;background:var(--memo);color:var(--memo-ink);padding:0 .12em;border-radius:6px}
+.hero p{font-size:17px;max-width:56ch;color:var(--muted);margin:14px 0 0}
+.field{display:grid;gap:6px;max-width:420px}
+.field input{font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:100%}
+.inds{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;border:0;padding:0;margin:0}
+.inds legend{margin-bottom:8px;padding:0}
+.ind{position:relative;display:flex;flex-direction:column;gap:3px;border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;background:var(--surface);cursor:pointer}
+.ind input{position:absolute;opacity:0;pointer-events:none}
+.ind b{font-family:var(--f-display);font-size:16px}
+.ind span{font-size:12.5px;color:var(--muted)}
+.ind .p{font-family:var(--f-mono);font-size:11.5px;color:var(--accent)}
+.ind:has(input:checked){border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.ind:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.custom{display:flex;flex-wrap:wrap;gap:12px}
+.custom .field{flex:1 1 220px}
+.rules{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin:0;padding:0;list-style:none}
+.rules li{border-top:2px solid var(--ink);padding-top:8px;font-size:13px}
+.rules li b{display:block;font-family:var(--f-display);font-size:15px}
+.end-card{background:var(--ink);color:var(--paper);border-radius:var(--r);padding:20px;display:grid;gap:10px}
+.end-card h2{font-size:26px}
+.end-card .lbl{color:var(--paper);opacity:.7}
+.end-card p{margin:0;max-width:70ch}
+.confirm{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}
+@media (prefers-reduced-motion:no-preference){.memo-card{animation:drop .35s ease-out}@keyframes drop{from{transform:translateY(-6px)}to{transform:none}}}
+
+/* ---------- hiring desk & payroll ---------- */
+.hr{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:1000px){.hr{grid-template-columns:minmax(0,1fr)}}
+.post{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.post select{font:inherit;font-size:13px;padding:5px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);max-width:100%}
+.cands{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.cand{border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:7px;min-width:0;background:var(--surface)}
+.cand header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.cand header div{display:flex;flex-direction:column;min-width:0}
+.cand header b{font-family:var(--f-display);font-size:15px}
+.cand p{margin:0;font-size:12.5px}
+.verdict{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:99px;white-space:nowrap;border:1px solid currentColor}
+.v-strong{color:var(--good)} .v-solid{color:var(--accent)} .v-gamble{color:var(--warn)} .v-pass{color:var(--bad)}
+.stars{font-size:13px;letter-spacing:1px;color:var(--warn)}
+.stars.pull{color:var(--accent)}
+.scores{display:grid;gap:2px}
+.srcs{display:grid;gap:7px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.src{display:grid;grid-template-columns:minmax(0,1fr) auto;font-size:12.5px;gap:2px 8px}
+.src b{font-family:var(--f-mono);font-weight:500}
+.src i{grid-column:1 / -1;height:4px;border-radius:4px;background:var(--accent);opacity:.75}
+.stars span{letter-spacing:0;color:var(--muted);font-size:11.5px;margin-left:4px}
+.traits{display:flex;flex-wrap:wrap;gap:4px}
+.tr{font-size:11.5px;padding:1px 8px;border-radius:99px;background:var(--sunk)}
+.tr.g{color:var(--good)} .tr.r{color:var(--bad)}
+.why{color:var(--muted);font-style:italic}
+.terms{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;background:var(--sunk);border-radius:8px;padding:7px 9px;font-size:12px}
+.terms div{display:flex;flex-direction:column;min-width:0}
+.terms b{font-family:var(--f-mono);font-size:12px;font-weight:500}
+.offer{display:flex;flex-wrap:wrap;gap:6px}
+.empty{border:1px dashed var(--line);border-radius:var(--r);padding:18px;color:var(--muted);font-size:13px}
+.pay{display:grid;gap:2px}
+.payrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding-block:7px;border-bottom:1px solid var(--line)}
+.payrow:last-child{border-bottom:0}
+.payrow .rl b{font-weight:500}
+.payrow output{font-family:var(--f-display);font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;text-align:right}
+.payrow input{grid-column:1 / -1}
+.payrow .meta{grid-column:1 / -1;display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--muted)}
+.pill{font-family:var(--f-mono);font-size:10.5px;padding:0 6px;border-radius:99px;border:1px solid currentColor}
+.talent{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+
+/* ---------- live floor ---------- */
+.floor-panel .fh{display:flex;flex-direction:column}
+.fctl{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.floor-scroll{overflow-x:auto;border-radius:8px;border:1px solid var(--line)}
+canvas.floor{display:block;width:100%;min-width:720px;aspect-ratio:1000/430;height:auto;background:var(--paper)}
+
+/* ---------- tutorial ---------- */
+.tut-hl{position:fixed;z-index:50;border:3px solid var(--memo);border-radius:12px;box-shadow:0 0 0 9999px rgba(8,12,28,.55);pointer-events:none;transition:left .25s ease,top .25s ease,width .25s ease,height .25s ease}
+.tut-card{position:fixed;z-index:51;background:var(--memo);color:var(--memo-ink);border-radius:12px;padding:14px 16px;display:grid;gap:8px;box-shadow:0 12px 32px rgba(0,0,0,.3)}
+.tut-card .lbl{color:var(--memo-ink);opacity:.7}
+.tut-card h3{font-size:18px}
+.tut-card p{margin:0;font-size:13.5px;line-height:1.5}
+.tut-btns{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.tut-nav{display:flex;gap:6px}
+.tut-card .btn{background:rgba(255,255,255,.6);border-color:rgba(43,34,0,.3);color:var(--memo-ink)}
+.tut-card .btn:hover:not(:disabled){color:var(--memo-ink);border-color:var(--memo-ink)}
+.tut-card .btn.memo{background:var(--memo-ink);border-color:var(--memo-ink);color:var(--memo)}
+.tut-card .btn.memo:hover:not(:disabled){color:var(--memo);filter:none}
+.tut-card .btn:focus-visible{outline-color:var(--memo-ink)}
+@media (prefers-reduced-motion: reduce){.tut-hl{transition:none}}
+</style>
+
+<div id="app"></div>
+
+<script>
+(()=>{
+const D=['sales','ops','product','support'];
+const DN={sales:'Sales',ops:'Operations',product:'Product',support:'Support'};
+const SAL={sales:4500,ops:3800,product:7000,support:3500};
+const MGR=8000, VPS=15000, EXS={coo:24000,cfo:20000}, RENT=400, SPAN=6, CEO_SPAN=8, SERVE=450, SUP=800;
+const MKT={sales:SAL.sales,ops:SAL.ops,product:SAL.product,support:SAL.support,mgr:MGR,vp:VPS,coo:EXS.coo,cfo:EXS.cfo};
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const REGIONS=['Home city','Neighboring city','Statewide','Regional','Nationwide','Cross-border','Continental','Global'];
+const SEASON={coffee:{0:1.15,1:1.1,10:1.1,11:1.2},tacos:{5:1.2,6:1.3,7:1.3},toys:{10:1.4,11:2},oil:{5:1.15,6:1.2,7:1.15},restaurant:{1:1.15,4:1.1,11:1.25},clothing:{2:1.1,8:1.15,10:1.2,11:1.3}};
+const FIRST=['Ana','Ben','Chidi','Dana','Elif','Farah','Gus','Hana','Ivan','Jo','Kenji','Lena','Mateo','Nia','Omar','Priya','Quinn','Rosa','Sam','Tariq','Uma','Vik','Wen','Yara','Zoe','Bruno','Inês','Kofi','Lior','Mei'];
+const LAST=['Okafor','Silva','Novak','Haddad','Kim','Moreau','Patel','Reyes','Lindqvist','Tanaka','Mensah','Costa','Weber','Ali','Rossi','Nakamura','Byrne','Duarte','Ivanova','Chen','Adeyemi','Larsen','Romero','Shah'];
+const PLACES=['a family business','a fast-growing startup','a national chain','a big-box retailer','a rival company','a large corporation','a local competitor','a nonprofit','a consulting firm'];
+const IND={
+  coffee:{name:'Coffee roastery',product:'cold brew and fresh beans',unit:'cup',units:'cups',price:6,cost:2,perCust:8,market:60000,cpl:5,churn:.045,t:{sales:'Sales reps',ops:'Baristas',product:'Roasters',support:'Hosts'},one:{sales:'Sales rep',ops:'Barista',product:'Roaster',support:'Host'},blurb:'Cheap, habitual, high volume.'},
+  sneakers:{name:'Sneaker brand',product:'limited-run sneakers',unit:'pair',units:'pairs',price:120,cost:45,perCust:.4,market:80000,cpl:9,churn:.05,t:{sales:'Sales reps',ops:'Factory crew',product:'Designers',support:'Care team'},one:{sales:'Sales rep',ops:'Factory worker',product:'Designer',support:'Care agent'},blurb:'Hype-driven, fashion margins.'},
+  saas:{name:'Software app',product:'a team productivity app',unit:'seat',units:'seats',price:29,cost:4,perCust:1,market:120000,cpl:12,churn:.025,t:{sales:'Account execs',ops:'DevOps',product:'Engineers',support:'Success reps'},one:{sales:'Account exec',ops:'DevOps engineer',product:'Software engineer',support:'Success rep'},blurb:'Subscriptions, sticky customers.'},
+  tacos:{name:'Taco truck fleet',product:'street tacos',unit:'plate',units:'plates',price:11,cost:4,perCust:4,market:50000,cpl:4,churn:.05,t:{sales:'Promoters',ops:'Line cooks',product:'Chefs',support:'Window staff'},one:{sales:'Promoter',ops:'Line cook',product:'Chef',support:'Window server'},blurb:'Fast cash, summer peaks.'},
+  ebikes:{name:'E-bike maker',product:'electric commuter bikes',unit:'bike',units:'bikes',price:1800,cost:1000,perCust:.03,market:100000,cpl:15,churn:.035,t:{sales:'Showroom reps',ops:'Assemblers',product:'Engineers',support:'Mechanics'},one:{sales:'Showroom rep',ops:'Assembler',product:'Engineer',support:'Mechanic'},blurb:'Big tickets, thin volume.'},
+  toys:{name:'Toy company',product:'build-it-yourself robot kits',unit:'kit',units:'kits',price:25,cost:9,perCust:1.5,market:70000,cpl:6,churn:.05,t:{sales:'Retail reps',ops:'Packers',product:'Toy designers',support:'Parent helpline'},one:{sales:'Retail rep',ops:'Packer',product:'Toy designer',support:'Helpline agent'},blurb:'Holiday rush every December.'},
+  oil:{name:'Oil company',product:'gasoline and diesel from your own wells',unit:'gallon',units:'gallons',price:3.6,cost:1.5,perCust:14,market:150000,cpl:6,churn:.04,t:{sales:'Fuel traders',ops:'Rig crew',product:'Geologists',support:'Station attendants'},one:{sales:'Fuel trader',ops:'Rig worker',product:'Geologist',support:'Station attendant'},blurb:'Huge market, supply shocks, spill risk.'},
+  restaurant:{name:'Restaurant group',product:'sit-down dinners at your bistros',unit:'meal',units:'meals',price:28,cost:9,perCust:1.6,market:60000,cpl:5,churn:.05,t:{sales:'Catering sales',ops:'Kitchen crew',product:'Chefs',support:'Waitstaff'},one:{sales:'Catering rep',ops:'Line cook',product:'Chef',support:'Server'},blurb:'Critics, inspectors, busy holidays.'},
+  clothing:{name:'Clothing store',product:'everyday clothes and jackets',unit:'item',units:'items',price:45,cost:16,perCust:1.1,market:90000,cpl:7,churn:.05,t:{sales:'Brand reps',ops:'Stockroom crew',product:'Designers',support:'Sales associates'},one:{sales:'Brand rep',ops:'Stockroom worker',product:'Designer',support:'Sales associate'},blurb:'Trends change every season.'}
+};
+const NAMES=['Northwind & Co.','Bright Harbor','Copperline','Tall Pines Ltd.','Bluebird Works','Kestrel House'];
+
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+const randn=()=>{let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);};
+const person=()=>rnd(FIRST)+' '+rnd(LAST);
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function fmt$(n){const a=Math.abs(n),s=n<0?'−':'';if(a>=1e9)return s+'$'+(a/1e9).toFixed(2)+'B';if(a>=1e6)return s+'$'+(a/1e6).toFixed(a>=1e7?1:2)+'M';if(a>=1e4)return s+'$'+Math.round(a/1e3)+'k';if(a>=1e3)return s+'$'+(a/1e3).toFixed(1)+'k';return s+'$'+Math.round(a);}
+const fmtN=n=>Math.round(n).toLocaleString('en-US');
+const fmtK=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e4?Math.round(n/1e3)+'k':fmtN(n);
+const fmtP=p=>p>=100?'$'+Math.round(p).toLocaleString('en-US'):'$'+p.toFixed(2);
+const pct=n=>Math.round(n*100)+'%';
+const monthLabel=m=>MON[((m%12)+12)%12]+' Y'+(Math.floor(m/12)+1);
+const priceStep=s=>s.ind.price<20?.25:s.ind.price<300?1:10;
+const roundPrice=(p,s)=>{const st=priceStep(s);return Math.max(st,Math.round(p/st)*st);};
+const short=n=>{const p=n.split(' ');return p[0][0]+'. '+p.slice(1).join(' ');};
+const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:3;
+
+/* ---------- state ---------- */
+let S=null, confirmNew=false, setupPick='coffee';
+const KEY='corner-office-v1';
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function migrate(s){
+  if(!s)return null;
+  if(s.v===1){
+    const P=n=>typeof n==='string'?{n,sk:3}:n;
+    for(const d of D){const x=s.depts[d];x.mgr=x.mgr.map(P);x.vp=x.vp?P(x.vp):null;x.sk=x.sk||3;}
+    s.execs.coo=s.execs.coo?P(s.execs.coo):null;s.execs.cfo=s.execs.cfo?P(s.execs.cfo):null;
+    if(!s.ind.one)s.ind.one=IND[s.ind.key]?IND[s.ind.key].one:{sales:'Sales rep',ops:'Operations associate',product:'Product specialist',support:'Support agent'};
+    s.pay={...MKT};s.cands=[];s.cid=1;s.leaving=[];s.v=2;
+    refreshCands(s,3);
+  }
+  if(s.v===2&&s.depts.sales.ch==null){const C=p=>{if(p&&p.ch==null)p.ch=3;};for(const d of D){const x=s.depts[d];x.ch=3;x.mgr.forEach(C);C(x.vp);}C(s.execs.coo);C(s.execs.cfo);s.cands.forEach(c=>{if(c.ch==null){c.ch=3;c.shownCh=3;c.bio='';}});}
+  return s.v===2?s:null;
+}
+function load(){try{return migrate(JSON.parse(localStorage.getItem(KEY)||'null'));}catch(e){return null;}}
+
+function makeInd(key,custom){
+  if(key!=='custom') return {...IND[key],key};
+  const p=Math.max(1,Number(custom.price)||20);
+  return {key:'custom',name:'Company',product:custom.product||'our product',unit:'unit',units:'units',price:p,cost:+(p*.38).toFixed(2),perCust:48/p,market:70000,cpl:7,churn:.045,
+    t:{sales:'Sales reps',ops:'Operations crew',product:'Product team',support:'Support team'},one:{sales:'Sales rep',ops:'Operations associate',product:'Product specialist',support:'Support agent'}};
+}
+function newGame(name,key,custom){
+  const ind=makeInd(key,custom);
+  const st={v:2,name:name||'Northwind & Co.',ind,month:0,cash:300000,debt:0,equity:1,price:ind.price,mkt:5000,rd:0,
+    depts:{sales:{emp:1,sk:3,ch:3,mgr:[],vp:null},ops:{emp:2,sk:3,ch:3,mgr:[],vp:null},product:{emp:1,sk:3,ch:3,mgr:[],vp:null},support:{emp:1,sk:3,ch:3,mgr:[],vp:null}},
+    execs:{coo:null,cfo:null},customers:0,quality:45,rep:50,morale:75,marketSize:ind.market,regions:1,
+    mods:{leadBoost:1,costMult:1,costM:0,refMult:1,refM:0,prodPen:1},
+    pay:{...MKT},cands:[],cid:1,leaving:[],
+    hist:[],log:[],ms:{},ev:null,lastRaise:-99,neg:0,over:false,won:false,last:null};
+  st.log.unshift({m:0,t:`${st.name} opens its doors selling ${ind.product}. You have $300k and a team of five.`,k:'info'});
+  refreshCands(st,4);
+  return st;
+}
+function log(t,k='info'){S.log.unshift({m:S.month,t,k});if(S.log.length>80)S.log.length=80;}
+
+const empCount=s=>D.reduce((a,d)=>a+s.depts[d].emp,0);
+const mgrCount=s=>D.reduce((a,d)=>a+s.depts[d].mgr.length,0);
+const vpCount=s=>D.filter(d=>s.depts[d].vp).length;
+const execCount=s=>(s.execs.coo?1:0)+(s.execs.cfo?1:0);
+const headcount=s=>1+empCount(s)+mgrCount(s)+vpCount(s)+execCount(s);
+function payroll(s){let p=0;for(const d of D){const x=s.depts[d];p+=x.emp*s.pay[d]+x.mgr.length*s.pay.mgr+(x.vp?s.pay.vp:0);}if(s.execs.coo)p+=s.pay.coo;if(s.execs.cfo)p+=s.pay.cfo;return p;}
+const ratio=(s,k)=>s.pay[k]/MKT[k];
+function payGroups(s){return [...D.map(d=>[d,s.depts[d].emp]),['mgr',mgrCount(s)],['vp',vpCount(s)],['coo',s.execs.coo?1:0],['cfo',s.execs.cfo?1:0]];}
+function avgRatio(s){let n=0,t=0;for(const [k,c] of payGroups(s)){n+=c;t+=c*ratio(s,k);}return n?t/n:1;}
+
+function deptStats(s){
+  const o={};let U=0;
+  for(const d of D){const x=s.depts[d];const managed=Math.min(x.emp,x.mgr.length*SPAN);o[d]={managed,un:x.emp-managed};U+=o[d].un;}
+  const cover=Math.min(U,CEO_SPAN);const uf=U>0?(U-cover)/U:0;
+  const mf=.7+.5*s.morale/100;
+  const coo=s.execs.coo?1+.033*s.execs.coo.sk:1;
+  for(const d of D){const x=s.depts[d],q=o[d];
+    const mb=1+.04*avg(x.mgr.map(m=>m.sk));
+    const vp=x.vp?1.05+.05*x.vp.sk:1;
+    const effort=clamp(.85+.15*ratio(s,d),.9,1.05);
+    q.eff=(q.managed*mb+q.un*(1-uf)+q.un*uf*.5)*vp*coo*mf*s.mods.prodPen*(.7+.1*x.sk)*effort;}
+  o.U=U;o.uf=uf;o.lost=U-cover;return o;
+}
+
+const WOM={sales:2,support:1.5,ops:1,product:.5};
+function womOf(s){let t=0;const mf=.7+.5*s.morale/100;for(const d of D){const x=s.depts[d];t+=x.emp*8*(x.ch||3)*WOM[d];for(const m of x.mgr)t+=20*(m.ch||3);if(x.vp)t+=50*(x.vp.ch||3);}for(const k of ['coo','cfo'])if(s.execs[k])t+=60*(s.execs[k].ch||3);return t*mf*(.6+s.rep/125);}
+/* ---------- the month engine ---------- */
+function simulate(s,preview){
+  const ind=s.ind,st=deptStats(s),m=s.month,quitLog=[];
+  const season=(SEASON[ind.key]||{})[m%12]||1;
+  const ref=ind.price*s.mods.refMult;
+  const capacity=st.ops.eff*SERVE*ind.perCust;
+  const mktLeads=s.mkt/ind.cpl/(1+s.mkt/150000)*(.6+s.rep/125)*(s.depts.sales.vp?1.15:1);
+  const repLeads=st.sales.eff*120;
+  const womLeads=womOf(s);
+  const leads=(mktLeads+repLeads+womLeads)*season*s.mods.leadBoost;
+  const pf=clamp(Math.pow(ref/s.price,1.6),.05,3);
+  const conv=clamp(.15*pf*(.4+s.quality/100)*(.5+s.rep/100),0,.8);
+  const room=Math.max(0,1-s.customers/s.marketSize);
+  const newC=Math.round(leads*conv*room);
+  const base=s.customers+newC;
+  const demand=base*ind.perCust;
+  const sold=Math.min(demand,capacity);
+  const fulfill=demand>0?sold/demand:1;
+  const supCov=base>0?Math.min(1,st.support.eff*SUP/base):1;
+  const churnRate=ind.churn+.06*(1-supCov)+.03*(1-s.quality/100)+.12*(1-fulfill)+.03*Math.max(0,s.price/ref-1);
+  const churned=Math.round(s.customers*churnRate);
+  s.customers=Math.max(0,base-churned);
+  const cfo=s.execs.cfo;
+  const revenue=sold*s.price;
+  const cogs=sold*ind.cost*s.mods.costMult*(cfo?1-.013*cfo.sk:1);
+  const pay=payroll(s);
+  const rent=headcount(s)*RENT*(cfo?.85:1);
+  const interest=s.debt*.012;
+  const expenses=cogs+pay+rent+s.mkt+s.rd+interest;
+  const profit=revenue-expenses;
+  s.cash+=profit;
+  const q0=s.quality;
+  const gain=(st.product.eff*1.1+s.rd/4000)*(1-s.quality/110);
+  s.quality=clamp(s.quality+gain-1.2,5,100);
+  const target=.45*s.quality+25*supCov+30*fulfill;
+  s.rep=clamp(s.rep+(target-s.rep)*.2,0,100);
+  const emp=empCount(s),lostFrac=emp?st.lost/emp:0;
+  const payMood=clamp((avgRatio(s)-1)*50,-25,12);
+  const mt=78-45*lostFrac+(vpCount(s)?4:0)+(s.execs.coo?3:0)-(supCov<.6?8:0)-(fulfill<.7?6:0)-(s.cash<0?20:0)+payMood;
+  s.morale=clamp(s.morale+(mt-s.morale)*.25,0,100);
+  let quits=0;
+  if(!preview){
+    for(const d of D){const x=s.depts[d];let q=0;
+      if(s.morale<35)q+=Math.floor(x.emp*.08);
+      const r=ratio(s,d);if(r<.9)q+=Math.round(x.emp*(.9-r)*.4+Math.random()*.6);
+      q=Math.min(q,x.emp);if(q){x.emp-=q;quits+=q;if(r<.9)quitLog.push(`${q} underpaid ${ind.t[d].toLowerCase()} quit.`);}}
+    const leave=(k,p,label,take)=>{if(ratio(s,k)<.85&&Math.random()<p){take();quitLog.push(label);}};
+    for(const d of D){const x=s.depts[d];
+      for(const mg of [...x.mgr])leave('mgr',.1,`${mg.n}, a ${DN[d]} manager, quit over pay.`,()=>{x.mgr=x.mgr.filter(y=>y!==mg);});
+      if(x.vp){const n=x.vp.n;leave('vp',.12,`${n}, VP of ${DN[d]}, quit over pay.`,()=>{x.vp=null;});}}
+    for(const k of ['coo','cfo'])if(s.execs[k]){const n=s.execs[k].n;leave(k,.15,`${n} quit the ${k.toUpperCase()} seat over pay.`,()=>{s.execs[k]=null;});}
+    s.leaving=(s.leaving||[]).filter(L=>{if(L.m>s.month)return true;const x=s.depts[L.d];
+      if(L.role==='emp'&&x.emp>0){x.emp--;quitLog.push(`${L.n} (${ind.one[L.d].toLowerCase()}) left for another job.`);}
+      else if(L.role==='mgr'&&x.mgr.some(y=>y.n===L.n)){x.mgr=x.mgr.filter(y=>y.n!==L.n);quitLog.push(`${L.n}, a ${DN[L.d]} manager, left for another job.`);}
+      return false;});
+  }
+  s.mods.leadBoost=1;s.mods.prodPen=1;
+  if(s.mods.costM>0&&--s.mods.costM===0)s.mods.costMult=1;
+  if(s.mods.refM>0&&--s.mods.refM===0)s.mods.refMult=1;
+  s.month++;
+  return {revenue,cogs,payroll:pay,rent,mkt:s.mkt,rd:s.rd,interest,expenses,profit,newC,churned,leads,repLeads:repLeads*season,mktLeads:mktLeads*season,womLeads:womLeads*season,conv,capacity,demand,sold,fulfill,supCov,qDelta:s.quality-q0,quits,quitLog,ref};
+}
+function preview(){const c=JSON.parse(JSON.stringify(S));return simulate(c,true);}
+
+const opValue=s=>Math.max(0,valuation(s)-s.cash+s.debt);
+function valuation(s){
+  const rev=s.last?s.last.revenue:0;const h=s.hist;const prev=h.length>3?h[h.length-4].rev:0;
+  const g=prev>0&&rev>0?Math.pow(rev/prev,1/3)-1:0;
+  const mult=1.5+clamp(g*40,0,8)+s.rep/40+s.quality/50;
+  return Math.max(0,rev*12*mult+s.cash-s.debt);
+}
+const maxDebt=s=>150000+(s.last?s.last.revenue*12:0)*(s.execs.cfo?.5:.2);
+const expandCost=s=>Math.round(60000*Math.pow(1.9,s.regions-1)/1000)*1000;
+const raiseAmt=s=>Math.max(250000,Math.round(opValue(s)*.25*(s.execs.cfo?1.2:1)/10000)*10000);
+const canRaise=s=>s.month-s.lastRaise>=6&&s.last&&s.last.revenue>0&&s.equity>.2;
+
+/* ---------- candidates ---------- */
+const TRAITS=[
+  {id:'refs',label:'Glowing references',g:1,sk:.4},
+  {id:'built',label:'Built a team from scratch',g:1,sk:.35,lv:['mgr','vp','coo','cfo']},
+  {id:'vet',label:'Industry veteran',g:1,sk:.2,minExp:10},
+  {id:'culture',label:'Lifts the people around them',g:1,sk:.1},
+  {id:'fast',label:'Fast learner',g:1,sk:.5,maxExp:3},
+  {id:'poached',label:'Comes from a rival',g:1,sk:.5},
+  {id:'hopper',label:'Job hopper: 4 jobs in 3 years',g:-1,sk:0},
+  {id:'vague',label:'Vague about last role',g:-1,sk:-.6},
+  {id:'late',label:'Late to the interview',g:-1,sk:-.3},
+  {id:'padded',label:'Résumé looks padded',g:-1,sk:-.4},
+  {id:'toxic',label:'Clashed with a former boss',g:-1,sk:0},
+  {id:'remote',label:'Wants to work remotely',g:0,sk:0},
+  {id:'bilingual',label:'Speaks three languages',g:0,sk:.1,ch:.4},
+  {id:'regulars',label:'Regulars follow them from job to job',g:1,sk:0,ch:1.2,lv:['emp','mgr']},
+  {id:'social',label:'Big social media following',g:1,sk:0,ch:1},
+  {id:'clients',label:'Brings a client list',g:1,sk:.1,ch:1.3,dd:['sales']},
+  {id:'network',label:'Well connected in the industry',g:1,sk:.1,ch:.8,lv:['mgr','vp','coo','cfo']},
+  {id:'shy',label:'Shy with customers',g:-1,sk:0,ch:-1},
+  {id:'rude',label:'Complaints about rudeness at last job',g:-1,sk:-.1,ch:-1.3}
+];
+const TR=Object.fromEntries(TRAITS.map(t=>[t.id,t]));
+const EXP={emp:[0,12],mgr:[3,16],vp:[8,22],coo:[12,28],cfo:[12,28]};
+const payKey=c=>c.lv==='emp'?c.d:c.lv;
+function roleName(s,c){return c.lv==='emp'?s.ind.one[c.d]:c.lv==='mgr'?`${DN[c.d]} manager`:c.lv==='vp'?`VP of ${DN[c.d]}`:c.lv==='coo'?'Chief operating officer':'Chief financial officer';}
+function background(s,c){
+  const p=rnd(PLACES);
+  if(c.lv==='emp')return c.exp<1?'Recent graduate, first full-time job':`${s.ind.one[c.d]} at ${p}`;
+  if(c.lv==='mgr')return `${rnd(['Team lead','Shift supervisor','Assistant manager','Department manager'])} at ${p}`;
+  if(c.lv==='vp')return `${rnd(['Director','Senior director','Head'])} of ${DN[c.d].toLowerCase()} at ${p}`;
+  if(c.lv==='coo')return `${rnd(['VP of operations','General manager','Chief of staff'])} at ${p}`;
+  return `${rnd(['Finance director','Controller','VP of finance'])} at ${p}`;
+}
+const PULL=[[1.8,'Puts customers off'],[2.6,'Low customer pull'],[3.4,'Average customer pull'],[4.2,'Strong customer pull'],[9,'Customer magnet']];
+const pullLabel=v=>PULL.find(p=>v<=p[0])[1];
+const leadsOf=c=>Math.round(c.lv==='emp'?8*c.shownCh*WOM[c.d]+(c.d==='sales'?120*(.7+.1*c.shown):0):c.lv==='mgr'?20*c.shownCh:c.lv==='vp'?50*c.shownCh:60*c.shownCh);
+function bio(c){
+  const f=c.n.split(' ')[0];
+  const a=c.exp<1?`${f} is fresh out of school and eager to prove themself.`:c.exp>=10?`${f} is a seasoned hand who has seen it all.`:c.exp>=4?`${f} has solid hands-on experience.`:`${f} is early in their career.`;
+  const b=c.shown>=4?'Interviewers called them one of the sharpest candidates this year.':c.shown>=3?'Capable and steady in the interview.':'Struggled with the practical questions.';
+  const p=c.shownCh>=4.3?'Customers ask for them by name, so expect them to pull in new business.':c.shownCh>=3.5?'Good with people and likely to bring in customers.':c.shownCh>=2.7?'Neither a draw nor a turn-off for customers.':"Keeps customers at arm's length and won't win many new ones.";
+  const q=((c.lv==='emp'&&c.d==='product')||c.lv==='cfo')?' Mostly works behind the scenes, so customer pull matters less here.':'';
+  return `${a} ${b} ${p}${q}`;
+}
+function genCand(s,lv,d){
+  const [lo,hi]=EXP[lv];const exp=Math.round(lo+Math.random()*(hi-lo));
+  const c={id:s.cid++,lv,d:d||null,n:person(),exp,born:s.month,tr:[]};
+  let sk=1.4+2.6*(exp-lo)/(hi-lo)+randn()*.8;let ch=2.6+randn()*.8+({sales:.6,support:.4,ops:0,product:-.3}[d]||0)+Math.min(.4,exp*.03);
+  const k=1+Math.floor(Math.random()*2.6);
+  const pool=TRAITS.filter(t=>(!t.dd||t.dd.includes(d))&&(!t.lv||t.lv.includes(lv))&&(!t.minExp||exp>=t.minExp)&&(t.maxExp==null||exp<=t.maxExp));
+  while(c.tr.length<k&&pool.length){const t=pool.splice(Math.floor(Math.random()*pool.length),1)[0];c.tr.push(t.id);sk+=t.sk;ch+=t.ch||0;if(t.ch)for(let i=pool.length-1;i>=0;i--)if(pool[i].ch&&Math.sign(pool[i].ch)!==Math.sign(t.ch)&&pool[i].id!=='bilingual')pool.splice(i,1);}
+  c.sk=+clamp(sk,1,5).toFixed(2);c.ch=+clamp(ch,1,5).toFixed(2);c.shownCh=clamp(Math.round((c.ch+randn()*.35)*2)/2,1,5);
+  const vpEye=(lv==='emp'||lv==='mgr')&&s.depts[d].vp;
+  const noise=randn()*(vpEye?.25:.65)+(c.tr.includes('padded')?.9:0);
+  c.shown=clamp(Math.round((c.sk+noise)*2)/2,1,5);c.vpEye=!!vpEye;
+  c.ask=Math.round(MKT[payKey(c)]*(.8+.1*c.sk)*(c.tr.includes('poached')?1.25:1)*(.95+Math.random()*.1)/100)*100;
+  const iv=(s.rep-50)/50+(s.morale-60)/60+Math.random()-.5;
+  c.int=iv>.4?'keen':iv>-.3?'open':'lukewarm';
+  c.bg=background(s,c);
+  c.bio=bio(c);
+  return c;
+}
+function roleBlock(s,lv,d){
+  if(lv==='emp')return '';
+  if(lv==='mgr'){const x=s.depts[d];return x.mgr.length>=(x.vp?80:3)?(x.vp?'80 managers max':'4th manager needs a VP'):'';}
+  if(lv==='vp'){const x=s.depts[d];if(x.vp)return 'VP seat is filled';if(x.mgr.length<2)return 'Needs 2 managers first';if(vpCount(s)>=2&&!s.execs.coo)return '3rd VP needs a COO';return '';}
+  if(s.execs[lv])return 'Seat is filled';
+  if(lv==='coo'&&vpCount(s)<2)return 'Needs 2 VPs first';
+  if(lv==='cfo'&&headcount(s)<12)return 'Needs 12+ people';
+  return '';
+}
+function refreshCands(s,n){
+  const opts=[];
+  for(const d of D){opts.push(['emp',d,3]);if(s.depts[d].emp>=4)opts.push(['mgr',d,1]);if(!roleBlock(s,'vp',d))opts.push(['vp',d,.6]);}
+  for(const k of ['coo','cfo'])if(!roleBlock(s,k))opts.push([k,null,.6]);
+  for(let i=0;i<n&&s.cands.length<10;i++){let r=Math.random()*opts.reduce((a,o)=>a+o[2],0);for(const o of opts){r-=o[2];if(r<=0){s.cands.push(genCand(s,o[0],o[1]));break;}}}
+}
+function accChance(s,c,bonus){
+  const r=s.pay[payKey(c)]/c.ask;
+  return clamp(.55+2.5*(r-1)+(s.rep-50)/120+({keen:.2,open:0,lukewarm:-.2}[c.int])+(s.morale-60)/200+(bonus?.35:0),.03,.97);
+}
+const bonusAmt=c=>Math.max(1000,Math.round(c.ask*2/1000)*1000);
+function verdict(s,c){
+  const g=c.tr.filter(t=>TR[t].g>0),b=c.tr.filter(t=>TR[t].g<0);
+  const face=c.d&&c.d!=='product';
+  const v=c.shown-.7*b.length+.25*g.length+(face?(c.shownCh-3)*.3:0);
+  const key=v>=4.1?'strong':v>=3.3?'solid':v>=2.5?'gamble':'pass';
+  const why=[];
+  why.push(c.shown>=4?'Impressive interview':c.shown<=2.5?'Weak interview':'Decent interview');
+  if(c.exp>=10)why.push(`${c.exp} years of experience`);else if(c.exp<=1)why.push('little real experience');
+  if(face&&c.shownCh>=4)why.push('draws customers');else if(face&&c.shownCh<=2)why.push('weak with customers');
+  if(c.tr.includes('refs'))why.push('references back them up');
+  if(c.tr.includes('hopper'))why.push('may not stay long');
+  if(c.tr.includes('padded'))why.push('the score may be inflated');
+  if(c.tr.includes('toxic'))why.push('could hurt team morale');
+  if(c.tr.includes('culture'))why.push('good for morale');
+  const r=s.pay[payKey(c)]/c.ask;
+  if(r<.95)why.push(`wants ${pct(1/r-1)} more than you pay`);else if(r>1.1)why.push('your pay beats their ask');
+  if(c.vpEye)why.push('your VP sat in');
+  let t=why.slice(0,4).join(', ');t=t[0].toUpperCase()+t.slice(1)+'.';
+  return {key,label:{strong:'Strong hire',solid:'Solid hire',gamble:'Gamble',pass:'Pass'}[key],why:t};
+}
+function hireCand(s,c){
+  const x=c.d?s.depts[c.d]:null;
+  if(c.lv==='emp'){x.sk=(x.sk*x.emp+c.sk)/(x.emp+1);x.ch=(x.ch*x.emp+c.ch)/(x.emp+1);x.emp++;}
+  else if(c.lv==='mgr')x.mgr.push({n:c.n,sk:c.sk,ch:c.ch});
+  else if(c.lv==='vp')x.vp={n:c.n,sk:c.sk,ch:c.ch};
+  else s.execs[c.lv]={n:c.n,sk:c.sk,ch:c.ch};
+  if(c.tr.includes('culture'))s.morale=clamp(s.morale+3,0,100);
+  if(c.tr.includes('toxic'))s.morale=clamp(s.morale-3,0,100);
+  if(c.tr.includes('hopper')&&(c.lv==='emp'||c.lv==='mgr')&&Math.random()<.6)s.leaving.push({d:c.d,role:c.lv,n:c.n,m:s.month+3+Math.floor(Math.random()*5)});
+}
+
+/* ---------- milestones ---------- */
+const MS=[
+  ['c100','First 100 customers',s=>s.customers>=100],
+  ['prof','First profitable month',s=>s.last&&s.last.profit>0],
+  ['mgr','Hire your first manager',s=>mgrCount(s)>0],
+  ['rev50','$50k revenue in a month',s=>s.last&&s.last.revenue>=5e4],
+  ['vp','Appoint a vice president',s=>vpCount(s)>0],
+  ['hc50','50 people on payroll',s=>headcount(s)>=50],
+  ['c10k','10,000 customers',s=>s.customers>=1e4],
+  ['exec','Full C-suite: COO and CFO',s=>s.execs.coo&&s.execs.cfo],
+  ['rev1m','$1M revenue in a month',s=>s.last&&s.last.revenue>=1e6],
+  ['ipo','$100M valuation: ring the bell',s=>valuation(s)>=1e8]
+];
+function checkMilestones(){for(const [id,label,f] of MS){if(!S.ms[id]&&f(S)){S.ms[id]=S.month;log(`Milestone: ${label}.`,'good');}}}
+
+/* ---------- events ---------- */
+const EVENTS={
+  viral:{w:2,cond:s=>s.customers>=50,prep:()=>({}),view:s=>({title:'You went viral',text:`A creator with two million followers posted about your ${s.ind.product}. Expect a rush of leads next month.`,opts:[
+    {label:'Pour fuel on it',note:'Spend $15k on ads. Leads ×2.2 next month.',run:s=>{s.cash-=15000;s.mods.leadBoost=2.2;}},
+    {label:'Let it ride',note:'Leads ×1.5 next month.',run:s=>{s.mods.leadBoost=1.5;}}]})},
+  supplier:{w:2,cond:s=>s.last&&s.last.cogs>2000&&s.mods.costM===0,prep:s=>({fee:Math.max(1000,Math.round(s.last.cogs*.6/1000)*1000)}),view:(s,d)=>({title:'Supplier price hike',text:'Your main supplier is raising prices 20% for the next six months.',opts:[
+    {label:'Lock a fixed contract',note:`Pay ${fmt$(d.fee)} now. Costs stay flat.`,run:s=>{s.cash-=d.fee;}},
+    {label:'Absorb it',note:'Unit costs +20% for 6 months.',run:s=>{s.mods.costMult=1.2;s.mods.costM=6;}}]})},
+  poach:{w:2,cond:s=>vpCount(s)>0,prep:s=>{const d=rnd(D.filter(k=>s.depts[k].vp));return{d,name:s.depts[d].vp.n};},view:(s,d)=>({title:'A rival is poaching',text:`${d.name}, your VP of ${DN[d.d]}, has an offer from a competitor for 40% more pay.`,opts:[
+    {label:'Counter with a retention bonus',note:'Pay $30k. They stay.',run:s=>{s.cash-=30000;}},
+    {label:'Wish them well',note:'Lose the VP. Morale −5.',run:s=>{const v=s.depts[d.d].vp;if(v&&v.n===d.name)s.depts[d.d].vp=null;s.morale=clamp(s.morale-5,0,100);}}]})},
+  paygap:{w:3,cond:s=>D.some(d=>s.depts[d].emp>=3&&ratio(s,d)<.9),prep:s=>({d:D.find(d=>s.depts[d].emp>=3&&ratio(s,d)<.9)}),view:(s,d)=>({title:'Pay complaint',text:`Your ${s.ind.t[d.d].toLowerCase()} signed a letter saying they earn ${pct(1-ratio(s,d.d))} less than the going rate of ${fmt$(MKT[d.d])} a month.`,opts:[
+    {label:'Raise them to market',note:`Pay goes to ${fmt$(MKT[d.d])}/mo. Morale +5.`,run:s=>{s.pay[d.d]=MKT[d.d];s.morale=clamp(s.morale+5,0,100);}},
+    {label:'Hold firm',note:'Morale −6. More of them may quit.',run:s=>{s.morale=clamp(s.morale-6,0,100);}}]})},
+  burnout:{w:2,cond:s=>headcount(s)>=10&&s.morale<72,prep:s=>({cost:headcount(s)*800}),view:(s,d)=>({title:'Burnout warning',text:'Exit interviews keep mentioning long hours and unclear priorities.',opts:[
+    {label:'Company-wide bonus',note:`Pay ${fmt$(d.cost)}. Morale +15.`,run:s=>{s.cash-=d.cost;s.morale=clamp(s.morale+15,0,100);}},
+    {label:'Hold the line',note:'Morale −6.',run:s=>{s.morale=clamp(s.morale-6,0,100);}}]})},
+  review:{w:2,cond:s=>s.customers>=200,prep:()=>({}),view:s=>({title:'A one-star review blows up',text:`A furious customer's post about your ${s.ind.product} is trending.`,opts:[
+    {label:'Hire a PR firm',note:'Pay $20k. Reputation −2.',run:s=>{s.cash-=20000;s.rep=clamp(s.rep-2,0,100);}},
+    {label:'Reply yourself',note:s.quality>=65?'Your quality backs you up. Reputation −3.':'Risky at this quality. Reputation −9.',run:s=>{s.rep=clamp(s.rep-(s.quality>=65?3:9),0,100);}}]})},
+  award:{w:1,cond:s=>s.rep>=60&&s.month>=4,prep:()=>({}),view:s=>({title:'You won an award',text:`${s.name} was named the best new ${s.ind.name.toLowerCase()} of the year.`,opts:[
+    {label:'Accept the trophy',note:'Reputation +8. Leads ×1.3 next month.',run:s=>{s.rep=clamp(s.rep+8,0,100);s.mods.leadBoost=1.3;}}]})},
+  pricewar:{w:2,cond:s=>s.month>=5&&s.mods.refM===0,prep:()=>({}),view:s=>({title:'Price war',text:'A freshly funded competitor cut prices 12% and is buying every ad slot in town.',opts:[
+    {label:'Match their price',note:'Your price −12%. Reputation +3.',run:s=>{s.price=roundPrice(s.price*.88,s);s.mods.refMult=.88;s.mods.refM=4;s.rep=clamp(s.rep+3,0,100);}},
+    {label:'Hold your price',note:'Market price −12% for 4 months.',run:s=>{s.mods.refMult=.88;s.mods.refM=4;}}]})},
+  bulk:{w:2,cond:s=>s.last&&s.last.capacity-s.last.sold>s.ind.perCust*100,prep:s=>{const n=Math.round((s.last.capacity-s.last.sold)*.8);return{n,val:Math.round(n*s.price*.8)};},view:(s,d)=>({title:'Bulk order on the table',text:`A corporate buyer wants ${fmtN(d.n)} ${s.ind.units} at 20% off, delivered this week from your spare capacity.`,opts:[
+    {label:'Take the order',note:`${fmt$(d.val)} in sales before costs. Morale −4 from overtime.`,run:s=>{const c=d.n*s.ind.cost*s.mods.costMult;s.cash+=d.val-c;s.morale=clamp(s.morale-4,0,100);log(`Bulk order delivered: net ${fmt$(d.val-c)}.`,'good');}},
+    {label:'Pass',note:'Keep the team fresh.',run:()=>{}}]})},
+  angel:{w:1,cond:s=>s.month>=3&&s.last&&s.last.revenue>0&&s.equity>.3,prep:s=>({amt:Math.max(100000,Math.round(opValue(s)*.12/10000)*10000)}),view:(s,d)=>({title:'An angel investor calls',text:`A former founder likes your numbers and offers ${fmt$(d.amt)} for 10% of the company.`,opts:[
+    {label:'Take the money',note:`Cash +${fmt$(d.amt)}. Your stake ×0.9.`,run:s=>{s.cash+=d.amt;s.equity*=.9;}},
+    {label:'Stay independent',note:'Keep your equity.',run:()=>{}}]})},
+  flood:{w:1,cond:s=>headcount(s)>=6,prep:s=>({cost:headcount(s)*1200}),view:(s,d)=>({title:'Burst pipe at the office',text:'Water everywhere. Desks, laptops and the coffee machine are gone.',opts:[
+    {label:'Repair right away',note:`Pay ${fmt$(d.cost)}.`,run:s=>{s.cash-=d.cost;}},
+    {label:'Go remote for a month',note:'Productivity −20% next month.',run:s=>{s.mods.prodPen=.8;}}]})},
+  intern:{w:1,cond:s=>s.depts.product.emp>=2,prep:()=>({}),view:s=>({title:'The intern had an idea',text:`An intern's weekend prototype makes your ${s.ind.product} noticeably better.`,opts:[
+    {label:'Ship it',note:'Quality +6.',run:s=>{s.quality=clamp(s.quality+6,0,100);}}]})},
+  audit:{w:1,cond:s=>s.month>=6&&s.last&&s.last.revenue>20000,prep:s=>({fine:Math.round(s.last.revenue*.15/1000)*1000}),view:(s,d)=>s.execs.cfo?({title:'Tax audit',text:`The tax office opened an audit. ${s.execs.cfo.n}, your CFO, had every receipt filed.`,opts:[{label:'Thank the CFO',note:'No cost.',run:()=>{}}]}):({title:'Tax audit',text:'The tax office opened an audit and your books are a mess. A CFO would have caught this.',opts:[
+    {label:'Settle',note:`Pay ${fmt$(d.fine)}.`,run:s=>{s.cash-=d.fine;}},
+    {label:'Fight it',note:`Coin flip: pay nothing or ${fmt$(d.fine*2)}.`,run:s=>{if(Math.random()<.5)log('Audit fight won. No penalty.','good');else{s.cash-=d.fine*2;log(`Audit fight lost: ${fmt$(d.fine*2)} penalty.`,'bad');}}}]})},
+  star:{w:1,cond:s=>s.month>=2,prep:()=>({name:person()}),view:(s,d)=>({title:'A star wants to join',text:`${d.name}, the best ${s.ind.one.product.toLowerCase()} at a rival ${s.ind.name.toLowerCase()}, wants to join your team. They want ${fmt$(MKT.product*1.4)} a month.`,opts:[
+    {label:'Hire them',note:`$10k signing bonus. Quality +4.`,run:s=>{s.cash-=10000;const x=s.depts.product;x.sk=(x.sk*x.emp+4.8)/(x.emp+1);x.ch=(x.ch*x.emp+4)/(x.emp+1);x.emp++;s.quality=clamp(s.quality+4,0,100);}},
+    {label:'Pass',note:'Not now.',run:()=>{}}]})},
+  oilshock:{w:3,cond:s=>s.ind.key==='oil'&&s.month>=3&&s.mods.refM===0,prep:()=>({}),view:s=>({title:'Supply shock',text:'Major producers cut output. Crude prices jump and every fuel seller can charge 25% more for the next three months.',opts:[
+    {label:'Raise prices to match',note:'Your price +25%. Margins jump.',run:s=>{s.price=roundPrice(s.price*1.25,s);s.mods.refMult=1.25;s.mods.refM=3;}},
+    {label:'Keep prices low',note:'Market price +25% for 3 months. Reputation +4.',run:s=>{s.mods.refMult=1.25;s.mods.refM=3;s.rep=clamp(s.rep+4,0,100);}}]})},
+  spill:{w:2,cond:s=>s.ind.key==='oil'&&s.month>=4&&s.last,prep:s=>({cost:Math.max(50000,Math.round(s.last.revenue*.3/1000)*1000)}),view:(s,d)=>({title:'Pipeline leak',text:'One of your pipelines is leaking near a river. Reporters are on the way.',opts:[
+    {label:'Full cleanup',note:`Pay ${fmt$(d.cost)}. Reputation −3.`,run:s=>{s.cash-=d.cost;s.rep=clamp(s.rep-3,0,100);}},
+    {label:'Do the legal minimum',note:`Pay ${fmt$(Math.round(d.cost*.3))}. Reputation −15.`,run:s=>{s.cash-=Math.round(d.cost*.3);s.rep=clamp(s.rep-15,0,100);}}]})},
+  critic:{w:3,cond:s=>s.ind.key==='restaurant'&&s.month>=3,prep:()=>({}),view:s=>({title:'A food critic booked a table',text:`The city's most feared restaurant critic is dining at one of your bistros tonight. Your quality score is ${Math.round(s.quality)}.`,opts:[
+    {label:"Send out the chef's best",note:'Quality 60+: reputation +10 and a rush of diners. Below: reputation −6.',run:s=>{if(s.quality>=60){s.rep=clamp(s.rep+10,0,100);s.mods.leadBoost=1.5;log('Rave review. Tables are booked for weeks.','good');}else{s.rep=clamp(s.rep-6,0,100);log('The critic called the food forgettable.','bad');}}},
+    {label:'Treat them like anyone else',note:'Quality 70+: reputation +6. Below: reputation −2.',run:s=>{s.rep=clamp(s.rep+(s.quality>=70?6:-2),0,100);}}]})},
+  inspect:{w:2,cond:s=>s.ind.key==='restaurant'&&s.month>=2,prep:()=>({}),view:s=>({title:'Health inspector on the way',text:'A tip says a surprise health inspection is coming this week.',opts:[
+    {label:'Close a day to deep-clean',note:'Pay $8k. No risk.',run:s=>{s.cash-=8000;}},
+    {label:'Open as usual',note:'About a 1 in 3 chance of a $25k fine and reputation −8.',run:s=>{if(Math.random()<.35){s.cash-=25000;s.rep=clamp(s.rep-8,0,100);log('Failed inspection: $25k fine.','bad');}else log('Passed the inspection.','good');}}]})},
+  press:{w:1,cond:s=>s.month>=3&&s.customers>=500,prep:()=>({}),view:s=>({title:'Magazine profile',text:`A business magazine wants ${s.name} in its "Ones to watch" issue.`,opts:[
+    {label:'Do the interview',note:'Reputation +4. Leads ×1.4 next month. More people apply.',run:s=>{s.rep=clamp(s.rep+4,0,100);s.mods.leadBoost=1.4;refreshCands(s,2);}}]})}
+};
+function maybeEvent(){
+  if(S.month<2||Math.random()>.4)return;
+  const pool=Object.entries(EVENTS).filter(([,e])=>e.cond(S));if(!pool.length)return;
+  let r=Math.random()*pool.reduce((a,[,e])=>a+e.w,0);
+  for(const [id,e] of pool){r-=e.w;if(r<=0){S.ev={id,d:e.prep(S)};return;}}
+}
+
+/* ---------- actions ---------- */
+const POST_FEE=lv=>lv==='coo'||lv==='cfo'?5000:lv==='vp'?3000:1500;
+function agencyHire(d,n){
+  const x=S.depts[d],r=ratio(S,d),fee=S.pay[d]*.5;
+  const p=clamp(.4+(r-.85)*4,0,1);let got=0;
+  for(let i=0;i<n;i++){if(S.cash<fee)break;if(Math.random()<p){const sk=clamp(2.6+randn()*.5,1,4.2),ch=clamp(2.7+randn()*.5,1,4.2);x.sk=(x.sk*x.emp+sk)/(x.emp+1);x.ch=(x.ch*x.emp+ch)/(x.emp+1);x.emp++;S.cash-=fee;got++;}}
+  if(got<n)log(`Agency sent ${n} ${S.ind.t[d].toLowerCase()}; ${got} accepted your ${fmt$(S.pay[d])}/mo.`,got?'info':'bad');
+}
+function act(a){
+  const [cmd,p1,p2,p3]=a.split(':');
+  if(cmd==='start'){startGame();return;}
+  if(cmd==='new'){confirmNew=true;render();return;}
+  if(cmd==='new-no'){confirmNew=false;render();return;}
+  if(cmd==='new-yes'){confirmNew=false;S=null;try{localStorage.removeItem(KEY);}catch(e){}render();window.scrollTo(0,0);return;}
+  if(!S)return;
+  if(cmd==='run'){runMonth();return;}
+  if(cmd==='tut'){Tut.start();return;}
+  if(cmd==='floor'){floorOpen=!floorOpen;try{localStorage.setItem('co-floor',floorOpen?'1':'0');}catch(e){}render();return;}
+  if(cmd==='ev'){const e=EVENTS[S.ev.id];const v=e.view(S,S.ev.d);const o=v.opts[+p1];o.run(S);log(`${v.title}: ${o.label.toLowerCase()}.`,'info');S.ev=null;}
+  else if(cmd==='hire'&&p2==='emp'){if(S.over)return;agencyHire(p1,+p3||1);}
+  else if(cmd==='promote'){const x=S.depts[p1];
+    if(p2==='mgr'){if(!x.emp||roleBlock(S,'mgr',p1))return;const n=person();x.emp--;x.mgr.push({n,sk:+clamp(x.sk+randn()*.6,1,5).toFixed(2),ch:+clamp(x.ch+randn()*.6,1,5).toFixed(2)});log(`${n} is promoted to ${DN[p1]} manager.`);}
+    else if(p2==='vp'){if(roleBlock(S,'vp',p1))return;const best=[...x.mgr].sort((a,b)=>b.sk-a.sk)[0];x.mgr=x.mgr.filter(m=>m!==best);x.vp={n:best.n,sk:+Math.min(5,best.sk+.2).toFixed(2),ch:best.ch||3};log(`${best.n} is promoted to VP of ${DN[p1]}.`,'good');}}
+  else if(cmd==='fire'){const x=S.depts[p1];
+    if(p2==='emp'){const k=Math.min(+p3||1,x.emp);if(!k)return;x.emp-=k;S.cash-=S.pay[p1]*k;S.morale=clamp(S.morale-Math.min(15,3*k),0,100);}
+    else if(p2==='mgr'){if(!x.mgr.length)return;const m=[...x.mgr].sort((a,b)=>a.sk-b.sk)[0];x.mgr=x.mgr.filter(y=>y!==m);S.cash-=S.pay.mgr;S.morale=clamp(S.morale-4,0,100);log(`${m.n} (weakest ${DN[p1]} manager) is let go.`,'bad');}
+    else if(p2==='vp'){if(!x.vp)return;log(`${x.vp.n} is let go as VP of ${DN[p1]}.`,'bad');x.vp=null;S.cash-=S.pay.vp;S.morale=clamp(S.morale-6,0,100);}}
+  else if(cmd==='exec-fire'){if(!S.execs[p1])return;log(`${S.execs[p1].n} leaves the ${p1.toUpperCase()} seat.`,'bad');S.execs[p1]=null;S.cash-=S.pay[p1];S.morale=clamp(S.morale-6,0,100);}
+  else if(cmd==='post'){const lv=p1,d=p2||null;if(roleBlock(S,lv,d)||S.cash<POST_FEE(lv))return;S.cash-=POST_FEE(lv);S.cands=S.cands.slice(-8);S.cands.push(genCand(S,lv,d),genCand(S,lv,d));log(`Job posted: ${roleName(S,{lv,d})}. Two people applied.`);}
+  else if(cmd==='offer'){const c=S.cands.find(x=>x.id===+p1);if(!c||roleBlock(S,c.lv,c.d))return;const b=p2==='1',bn=b?bonusAmt(c):0;if(S.cash<bn)return;
+    S.cands=S.cands.filter(x=>x!==c);
+    if(Math.random()<accChance(S,c,b)){S.cash-=bn;hireCand(S,c);log(`${c.n} accepted: ${roleName(S,c)} at ${fmt$(S.pay[payKey(c)])}/mo${b?` with a ${fmt$(bn)} signing bonus`:''}.`,'good');}
+    else log(`${c.n} turned down your offer for ${roleName(S,c)} and went elsewhere.`,'bad');}
+  else if(cmd==='pass'){S.cands=S.cands.filter(x=>x.id!==+p1);}
+  else if(cmd==='paymkt'){S.pay={...MKT};}
+  else if(cmd==='bonus'){const c=headcount(S)*600;if(S.cash<c)return;S.cash-=c;S.morale=clamp(S.morale+12,0,100);log(`Team bonus paid: ${fmt$(c)}. Morale up.`,'good');}
+  else if(cmd==='borrow'){const room=maxDebt(S)-S.debt;const amt=Math.min(50000,Math.floor(room/1000)*1000);if(amt<=0)return;S.debt+=amt;S.cash+=amt;log(`Borrowed ${fmt$(amt)} from the bank.`);}
+  else if(cmd==='repay'){const amt=Math.min(50000,S.debt);if(amt<=0||S.cash<amt)return;S.debt-=amt;S.cash-=amt;log(`Repaid ${fmt$(amt)} of debt.`,'good');}
+  else if(cmd==='raise'){if(!canRaise(S))return;const amt=raiseAmt(S);S.cash+=amt;S.equity*=.8;S.lastRaise=S.month;log(`Closed a funding round: ${fmt$(amt)} for 20% of the company.`,'good');}
+  else if(cmd==='expand'){if(S.regions>=REGIONS.length)return;const c=expandCost(S);if(S.cash<c)return;S.cash-=c;S.marketSize+=Math.round(S.ind.market*(.8+.5*S.regions));S.regions++;log(`Expanded: now selling ${REGIONS[S.regions-1].toLowerCase()}. Market grows to ${fmtN(S.marketSize)} people.`,'good');}
+  else if(cmd==='ipo'){S.won=true;log(`${S.name} rings the opening bell. You are a public company.`,'good');}
+  else if(cmd==='continue'){S.over=false;S.neg=0;}
+  checkMilestones();save();render();
+}
+function runMonth(){
+  if(S.ev||S.over)return;
+  const r=simulate(S,false);S.last=r;
+  S.hist.push({m:S.month-1,rev:r.revenue,exp:r.expenses,profit:r.profit,cash:S.cash,cust:S.customers});
+  if(S.hist.length>120)S.hist.shift();
+  log(`Revenue ${fmt$(r.revenue)}, ${r.profit>=0?'profit':'loss'} ${fmt$(Math.abs(r.profit))}. +${fmtN(r.newC)} / −${fmtN(r.churned)} customers.`,r.profit>=0?'good':'bad');
+  for(const q of r.quitLog)log(q,'bad');
+  if(S.morale<35&&r.quits)log('Morale is low enough that people are walking out.','bad');
+  if(S.cash<0){S.neg++;if(S.neg>=2){S.over=true;log('Two months underwater. The bank closed your accounts.','bad');}else log('Cash is negative. Fix it this month or the company folds.','bad');}else S.neg=0;
+  S.cands=S.cands.filter(c=>S.month-c.born<3);
+  refreshCands(S,1+Math.floor(Math.random()*2)+(S.rep>70?1:0));
+  checkMilestones();
+  if(!S.over)maybeEvent();
+  save();render();
+}
+function startGame(){
+  const name=(document.getElementById('co-name').value||'').trim()||'Northwind & Co.';
+  const key=(document.querySelector('input[name=ind]:checked')||{}).value||'coffee';
+  const custom={product:(document.getElementById('cu-product')||{}).value,price:(document.getElementById('cu-price')||{}).value};
+  S=newGame(name.slice(0,40),key,custom);save();render();window.scrollTo(0,0);setTimeout(Tut.start,60);
+}
+
+/* ---------- views ---------- */
+function setupView(){
+  const cards=Object.entries(IND).map(([k,v])=>`<label class="ind"><input type="radio" name="ind" value="${k}" ${k===setupPick?'checked':''}><b>${v.name}</b><span>${esc(v.product[0].toUpperCase()+v.product.slice(1))}. ${v.blurb}</span><span class="p">${fmtP(v.price)} per ${v.unit}</span></label>`).join('')+
+    `<label class="ind"><input type="radio" name="ind" value="custom" ${setupPick==='custom'?'checked':''}><b>Your own idea</b><span>Name any product and set its price.</span><span class="p">You decide</span></label>`;
+  return `<div class="wrap setup">
+  <div class="hero"><div class="eyebrow">A business simulation</div><h1>Corner <em>Office</em></h1>
+  <p>Pick a product, interview candidates, set everyone's pay, and grow into a company with managers, vice presidents and a C-suite. Every turn is one month. Reach a $100M valuation to take it public.</p></div>
+  <div class="field"><label class="lbl" for="co-name">Company name</label><input id="co-name" maxlength="40" value="${esc(rnd(NAMES))}" autocomplete="off"></div>
+  <fieldset class="inds"><legend class="lbl">What do you sell?</legend>${cards}</fieldset>
+  <div class="custom" id="custom-fields" ${setupPick==='custom'?'':'hidden'}>
+    <div class="field"><label class="lbl" for="cu-product">Product</label><input id="cu-product" maxlength="40" placeholder="handmade candles" value="handmade candles"></div>
+    <div class="field"><label class="lbl" for="cu-price">Price per unit ($)</label><input id="cu-price" type="number" min="1" max="100000" value="24"></div>
+  </div>
+  <div><button class="btn memo run" data-act="start">Open for business</button></div>
+  <ul class="rules">
+    <li><b>Candidates</b>People apply every month. Read their experience, skill and customer pull, then make an offer. They can say no.</li>
+    <li><b>Pay</b>You set what every role earns. Underpay and people quit; overpay and you burn cash.</li>
+    <li><b>Hierarchy</b>A manager runs 6 people. Two managers unlock a VP. A third VP needs a COO.</li>
+    <li><b>Survival</b>Two months in a row of negative cash ends the company. Borrow or raise before then.</li>
+  </ul></div>`;
+}
+
+function tickBar(){
+  const v=valuation(S);
+  return `<header class="top"><div class="wrap">
+    <div class="brand"><b>${esc(S.name)}</b><span>${esc(S.ind.key==='custom'?'Selling '+S.ind.product:S.ind.name)} · Month ${S.month+1}, ${monthLabel(S.month)}</span></div>
+    <div class="tick"><span class="lbl">Cash</span><b class="${S.cash<0?'bad':''}">${fmt$(S.cash)}</b></div>
+    <div class="tick"><span class="lbl">Valuation</span><b>${fmt$(v)}</b></div>
+    <div class="tick"><span class="lbl">Your stake</span><b>${fmt$(v*S.equity)}</b></div>
+    <button class="btn sm" data-act="tut">Tutorial</button>
+    <button class="btn memo run" data-act="run" ${S.ev||S.over?'disabled':''}>${S.ev?'Decide first':'Run month →'}</button>
+  </div></header>`;
+}
+function memoView(){
+  if(S.over)return `<section class="end-card"><span class="lbl">Final memo</span><h2>${esc(S.name)} has closed</h2><p>You ran out of cash for two straight months after ${S.month} months in business.</p><div class="opts"><button class="btn memo" data-act="new-yes">Start a new company</button><button class="btn" data-act="continue">Rescue it with a bailout loan</button></div></section>`;
+  if(!S.won&&valuation(S)>=1e8)return `<section class="memo-card"><span class="lbl">Memo from the board</span><h2>The bankers are calling</h2><p>${esc(S.name)} is worth ${fmt$(valuation(S))}. You can list on the stock exchange.</p><div class="opts"><button class="opt" data-act="ipo"><b>Ring the bell</b><small>Take the company public.</small></button></div></section>`;
+  if(!S.ev)return '';
+  const e=EVENTS[S.ev.id];const v=e.view(S,S.ev.d);
+  return `<section class="memo-card" aria-live="polite"><span class="lbl">Memo · ${monthLabel(S.month)}</span><h2>${esc(v.title)}</h2><p>${esc(v.text)}</p><div class="opts">${v.opts.map((o,i)=>`<button class="opt" data-act="ev:${i}"><b>${esc(o.label)}</b><small>${esc(o.note)}</small></button>`).join('')}</div></section>`;
+}
+function wonView(){
+  if(!S.won)return '';
+  return `<section class="end-card"><span class="lbl">Public company</span><h2>${esc(S.name)} is listed</h2><p>From five people to ${fmtN(headcount(S))} in ${S.month} months. You own ${pct(S.equity)} of a ${fmt$(valuation(S))} company, worth ${fmt$(valuation(S)*S.equity)} to you. Keep playing to grow it further.</p></section>`;
+}
+const skStr=sk=>`talent ${(+sk).toFixed(1)}/5`;
+function dots(n,cls){return Array.from({length:n},()=>`<i class="dot ${cls}"></i>`).join('');}
+function deptCard(d,st,pr){
+  const x=S.depts[d],o=st[d],t=S.ind.t[d];
+  const lost=Math.round(o.un*st.uf),cov=o.un-lost;
+  const cap=60;let a=Math.min(o.managed,cap),b=Math.min(cov,cap-a),c=Math.min(lost,cap-a-b);const extra=x.emp-a-b-c;
+  const out={sales:`${fmtK(pr.repLeads)} leads/mo`,ops:`${fmtK(pr.capacity)} ${S.ind.units}/mo`,product:`quality ${Math.round(S.quality)} ${pr.qDelta>=.05?'↑':pr.qDelta<=-.05?'↓':'→'}`,support:`covers ${fmtK(o.eff*SUP)} customers`}[d];
+  const vpB=roleBlock(S,'vp',d),mB=roleBlock(S,'mgr',d),fee=S.pay[d]*.5;
+  const vp=x.vp?`<div class="slot filled"><span class="lbl">VP of ${DN[d]}</span><span class="who" title="${skStr(x.vp.sk)}">${esc(x.vp.n)}</span><div class="act"><span class="talent">${skStr(x.vp.sk)}</span><button class="btn sm danger" data-act="fire:${d}:vp">Let go</button></div></div>`
+    :`<div class="slot"><span class="lbl">VP of ${DN[d]}</span><span class="who muted">Vacant</span><div class="act">${vpB?`<span class="hint">${vpB}</span>`:`<button class="btn sm" data-act="promote:${d}:vp">Promote best manager</button><button class="btn sm" data-act="post:vp:${d}" ${S.cash<POST_FEE('vp')?'disabled':''}>Find candidates · ${fmt$(POST_FEE('vp'))}</button>`}</div></div>`;
+  return `<section class="dept"><h3>${DN[d]}<span class="out">${out}</span></h3>${vp}
+    <div class="chips" aria-label="Managers">${x.mgr.length?x.mgr.slice(0,8).map(m=>`<span class="chip" title="${esc(m.n)} · ${skStr(m.sk)} · pull ${(+(m.ch||3)).toFixed(1)}">${esc(short(m.n))}</span>`).join('')+(x.mgr.length>8?`<span class="chip">+${x.mgr.length-8}</span>`:''):'<span class="hint">No managers yet</span>'}</div>
+    <div class="dots" aria-label="${x.emp} ${esc(t)}">${dots(a,'')}${dots(b,'c')}${dots(c,'l')}${extra>0?`<span class="more">+${extra}</span>`:''}</div>
+    <div class="row"><span class="rl">Managers<small>${fmt$(S.pay.mgr)}/mo · runs 6</small></span><div class="step"><button data-act="fire:${d}:mgr" aria-label="Let the weakest ${DN[d]} manager go" title="Let the weakest manager go" ${x.mgr.length?'':'disabled'}>−</button><output>${x.mgr.length}</output><button data-act="promote:${d}:mgr" aria-label="Promote one of your ${esc(t)} to manager" title="${mB||'Promote from within'}" ${mB||!x.emp?'disabled':''}>+</button></div></div>
+    <div class="row"><span class="rl">${esc(t)}<small>${fmt$(S.pay[d])}/mo · ${skStr(x.sk)} · pull ${(+x.ch).toFixed(1)}</small></span><div class="step"><button data-act="fire:${d}:emp:1" aria-label="Let one go" ${x.emp?'':'disabled'}>−</button><output>${x.emp}</output><button data-act="hire:${d}:emp:1" aria-label="Agency hire one" title="Agency hire: average talent, ${fmt$(fee)} fee" ${S.cash<fee||S.over?'disabled':''}>+</button><button class="x5" data-act="hire:${d}:emp:5" aria-label="Agency hire five" ${S.cash<fee*5||S.over?'disabled':''}>+5</button></div></div>
+    ${mB&&x.mgr.length>=3?`<span class="hint">${mB}</span>`:''}
+  </section>`;
+}
+function execSlot(k,title,what){
+  const p=S.execs[k],b=roleBlock(S,k);
+  return p?`<div class="slot filled"><span class="lbl">${title}</span><span class="who">${esc(p.n)}</span><span class="what">${what}</span><div class="act"><span class="talent">${skStr(p.sk)}</span><button class="btn sm danger" data-act="exec-fire:${k}">Let go</button></div></div>`
+    :`<div class="slot"><span class="lbl">${title}</span><span class="what">${what}</span><div class="act">${b?`<span class="hint">${b}</span>`:`<button class="btn sm" data-act="post:${k}" ${S.cash<POST_FEE(k)?'disabled':''}>Find candidates · ${fmt$(POST_FEE(k))}</button>`}</div></div>`;
+}
+function orgView(st,pr){
+  return `<section class="panel" id="p-org"><header><h2>Org chart</h2><span class="muted num">${fmtN(headcount(S))} people · payroll ${fmt$(payroll(S))}/mo</span></header>
+  <div class="org">
+    <div class="node ceo"><span class="lbl">Chief executive</span><b>You</b></div><div class="stem"></div>
+    <div class="execs">${execSlot('coo','COO','Boosts output everywhere. Unlocks a 3rd and 4th VP.')}${execSlot('cfo','CFO','Cheaper costs, bigger loans, better funding terms.')}</div>
+    <div class="stem"></div>
+    <div class="depts">${D.map(d=>deptCard(d,st,pr)).join('')}</div>
+  </div>
+  <div class="legend"><span><i class="dot"></i>Has a manager</span><span><i class="dot c"></i>Reports to you (you can run ${CEO_SPAN})</span><span><i class="dot l"></i>No one to report to (half speed)</span><span>+ on staff = agency hire · + on managers = promote</span></div></section>`;
+}
+function spendToT(v,max){return Math.round(100*Math.pow(Math.max(0,v)/max,1/2.2));}
+function tToSpend(t,max){return Math.round(max*Math.pow(t/100,2.2)/500)*500;}
+function leverView(pr){
+  const st=priceStep(S),ref=S.ind.price*S.mods.refMult;
+  return `<section class="panel" id="p-levers"><header><h2>This month's levers</h2><span class="hint">Set before you run the month</span></header>
+  <div class="lever"><div class="row"><label class="lbl" for="lv-price">Price per ${esc(S.ind.unit)}</label><b id="o-price">${fmtP(S.price)}</b></div>
+    <input type="range" id="lv-price" min="${roundPrice(ref*.4,S)}" max="${roundPrice(ref*2.5,S)}" step="${st}" value="${S.price}">
+    <span class="hint" id="h-price">${priceHint(ref)}</span></div>
+  <div class="lever"><div class="row"><label class="lbl" for="lv-mkt">Marketing</label><b id="o-mkt">${fmt$(S.mkt)}/mo</b></div>
+    <input type="range" id="lv-mkt" min="0" max="100" step="1" value="${spendToT(S.mkt,300000)}"><span class="hint">Buys leads. Returns shrink as spend climbs.</span></div>
+  <div class="lever"><div class="row"><label class="lbl" for="lv-rd">Research and development</label><b id="o-rd">${fmt$(S.rd)}/mo</b></div>
+    <input type="range" id="lv-rd" min="0" max="100" step="1" value="${spendToT(S.rd,150000)}"><span class="hint">Lifts quality alongside your ${esc(S.ind.t.product.toLowerCase())}.</span></div>
+  <div class="proj" id="proj">${projHTML(pr)}</div></section>`;
+}
+function priceHint(ref){const r=S.price/ref-1;return Math.abs(r)<.03?'Right at the market price.':`${pct(Math.abs(r))} ${r>0?'above':'below'} the market price of ${fmtP(ref)}.`;}
+function projHTML(pr){return `<div><span class="lbl">New customers</span><b>+${fmtN(pr.newC)}</b></div><div><span class="lbl">Revenue</span><b>${fmt$(pr.revenue)}</b></div><div><span class="lbl">Profit</span><b class="${pr.profit<0?'bad':'good'}">${fmt$(pr.profit)}</b></div>`;}
+
+function advice(st,pr){
+  const a=[],t=S.ind.t;
+  if(pr.fulfill<.97)a.push(['b',`Demand will outrun your ${t.ops.toLowerCase()}: ${fmtN(pr.sold)} of ${fmtN(pr.demand)} ${S.ind.units} made. Hire more ${t.ops.toLowerCase()} or customers walk.`]);
+  const under=Object.keys(MKT).filter(k=>ratio(S,k)<.9&&payGroups(S).find(g=>g[0]===k)[1]>0);
+  if(under.length)a.push(['b',`Underpaid: ${under.map(k=>D.includes(k)?t[k].toLowerCase():k==='mgr'?'managers':k==='vp'?'VPs':k.toUpperCase()).join(', ')}. Expect resignations until pay reaches about 90% of market.`]);
+  if(st.lost>0)a.push(['w',`${fmtN(st.lost)} people have no manager and work at half speed. Promote managers; each runs 6.`]);
+  if(pr.supCov<.9)a.push(['w',`${t.support} are stretched thin. Each covers about ${SUP} customers.`]);
+  const strong=S.cands.filter(c=>verdict(S,c).key==='strong'&&!roleBlock(S,c.lv,c.d)).length;
+  if(strong)a.push(['',`${strong} strong candidate${strong>1?'s are':' is'} waiting on the hiring desk.`]);
+  if(S.customers>S.marketSize*.75&&S.regions<REGIONS.length)a.push(['w',`You hold ${pct(S.customers/S.marketSize)} of your market. Expand to a new region to keep growing.`]);
+  if(pr.qDelta<-.2)a.push(['w',`Quality is slipping. Add ${t.product.toLowerCase()} or fund R&D.`]);
+  if(S.morale<50)a.push(['b',`Morale is ${Math.round(S.morale)}. Below 35, people start quitting.`]);
+  if(pr.profit<0&&S.cash>0){const rw=S.cash/-pr.profit;if(rw<6)a.push(['b',`Runway is about ${Math.max(1,Math.floor(rw))} month${rw>=2?'s':''}. Cut costs, borrow, or raise money.`]);}
+  if(S.cash<0)a.push(['b','Cash is negative. Borrow, raise or cut payroll before running the month.']);
+  if(!a.length)a.push(['',pr.profit>0?'The machine is humming. Push marketing harder or test a higher price.':'Steady start. Customers need time to build up; watch capacity as they arrive.']);
+  return a.slice(0,4);
+}
+function voices(){
+  if(!S.last)return [];
+  const u=S.ind.unit,v=[];
+  if(S.last.fulfill<.9)v.push('Sold out again? Third time this month.');
+  if(S.last.supCov<.8)v.push('Waited four days for a reply from support.');
+  if(S.price>S.last.ref*1.15)v.push(`Great ${u}, but the price keeps creeping up.`);
+  if(S.price<S.last.ref*.9)v.push("Can't believe how cheap this is.");
+  if(S.quality>=70)v.push(`Honestly the best ${u} I've ever bought.`);
+  if(S.quality<40)v.push("It's fine. Nothing special.");
+  if(S.rep>=70)v.push(`My whole office switched to ${S.name}.`);
+  if(!v.length)v.push("Solid. I'll be back.");
+  return v.slice(0,2).map(t=>({t,w:rnd(FIRST)+' '+rnd(LAST)[0]+'.'}));
+}
+function bossView(st,pr){
+  return `<section class="panel" id="p-boss"><header><h2>Chief of staff</h2><span class="hint">Forecast for ${monthLabel(S.month)}</span></header>
+  <ul class="advice">${advice(st,pr).map(([k,t])=>`<li class="${k}">${esc(t)}</li>`).join('')}</ul>
+  <div class="voices">${voices().map(v=>`<div class="voice">“${esc(v.t)}”<span>${esc(v.w)}, customer</span></div>`).join('')}</div></section>`;
+}
+function meter(v){return `<div class="meter"><i style="width:${clamp(v,0,100)}%"></i></div>`;}
+function customersView(){
+  const L=S.last;
+  return `<section class="panel" id="p-cust"><header><h2>Customers and company</h2><span class="hint">${esc(REGIONS[S.regions-1])} market</span></header>
+  <div class="kpis">
+    <div class="kpi"><span class="lbl">Customers</span><b>${fmtN(S.customers)}</b><span class="hint">${L?`+${fmtN(L.newC)} / −${fmtN(L.churned)}`:'none yet'}</span></div>
+    <div class="kpi"><span class="lbl">Market share</span><b>${pct(S.customers/S.marketSize)}</b><span class="hint">of ${fmtN(S.marketSize)}</span></div>
+    <div class="kpi"><span class="lbl">Conversion</span><b>${L?pct(L.conv):'—'}</b><span class="hint">of leads buy</span></div>
+    <div class="kpi"><span class="lbl">Quality</span><b>${Math.round(S.quality)}</b>${meter(S.quality)}</div>
+    <div class="kpi"><span class="lbl">Reputation</span><b>${Math.round(S.rep)}</b>${meter(S.rep)}</div>
+    <div class="kpi"><span class="lbl">Morale</span><b class="${S.morale<40?'bad':''}">${Math.round(S.morale)}</b>${meter(S.morale)}</div>
+  </div>${leadSrc()}</section>`;
+}
+function leadSrc(){const L=(S.last&&S.last.womLeads!=null)?S.last:preview();const t=Math.max(1,L.mktLeads+L.repLeads+L.womLeads);const row=(k,v)=>`<div class="src"><span>${esc(k)}</span><b>${fmtN(v)}</b><i style="width:${Math.round(v/t*100)}%"></i></div>`;return `<div class="srcs"><span class="lbl">Where leads ${S.last&&S.last.womLeads!=null?'came from last month':'will come from'}</span>${row('Marketing',L.mktLeads)}${row(S.ind.t.sales,L.repLeads)}${row('Staff word of mouth',L.womLeads)}</div>`;}
+function stars(n){const f=Math.round(n);return '★'.repeat(f)+'☆'.repeat(5-f);}
+function candCard(c){
+  const v=verdict(S,c),blk=roleBlock(S,c.lv,c.d),rate=S.pay[payKey(c)],bn=bonusAmt(c);
+  const p0=accChance(S,c,false),p1=accChance(S,c,true),left=3-(S.month-c.born);
+  return `<article class="cand"><header><div><b>${esc(c.n)}</b><span class="lbl">${esc(roleName(S,c))}</span></div><span class="verdict v-${v.key}">${v.label}</span></header>
+  <p><b>${c.exp} yr${c.exp===1?'':'s'} experience</b> · ${esc(c.bg)}</p>
+  ${c.bio?`<p>${esc(c.bio)}</p>`:''}
+  <div class="scores"><div class="stars" aria-label="Skill ${c.shown} of 5">${stars(c.shown)}<span>${c.shown.toFixed(1)} skill</span></div><div class="stars pull" aria-label="Customer pull ${c.shownCh} of 5">${stars(c.shownCh)}<span>${esc(pullLabel(c.shownCh))} · about ${fmtN(leadsOf(c))} leads/mo</span></div></div>
+  <div class="traits">${c.tr.map(t=>`<span class="tr ${TR[t].g>0?'g':TR[t].g<0?'r':''}">${esc(TR[t].label)}</span>`).join('')}</div>
+  <p class="why">${esc(v.why)}</p>
+  <div class="terms"><div><span class="lbl">Asks</span><b>${fmt$(c.ask)}/mo</b></div><div><span class="lbl">You pay</span><b class="${rate<c.ask*.95?'bad':rate>=c.ask?'good':''}">${fmt$(rate)}/mo</b></div><div><span class="lbl">Interest</span><b>${c.int}</b></div></div>
+  ${blk?`<span class="hint">${esc(blk)}</span>`:`<div class="offer"><button class="btn sm primary" data-act="offer:${c.id}:0">Offer · ${pct(p0)} yes</button><button class="btn sm" data-act="offer:${c.id}:1" ${S.cash<bn?'disabled':''}>+${fmt$(bn)} bonus · ${pct(p1)}</button><button class="btn sm" data-act="pass:${c.id}">Pass</button></div>`}
+  <span class="hint">Takes another offer in ${left} month${left===1?'':'s'}</span></article>`;
+}
+function postOptions(){
+  const o=[];
+  for(const d of D){o.push([`emp:${d}`,`${S.ind.one[d]} (${DN[d]})`,'emp',d]);o.push([`mgr:${d}`,`${DN[d]} manager`,'mgr',d]);o.push([`vp:${d}`,`VP of ${DN[d]}`,'vp',d]);}
+  o.push(['coo','Chief operating officer','coo'],['cfo','Chief financial officer','cfo']);
+  return o.map(([v,l,lv,d])=>{const b=roleBlock(S,lv,d);return `<option value="${v}" ${b?'disabled':''}>${esc(l)} · ${fmt$(POST_FEE(lv))}${b?` (${esc(b.toLowerCase())})`:''}</option>`;}).join('');
+}
+function hiringView(){
+  const cs=[...S.cands].sort((a,b)=>({strong:0,solid:1,gamble:2,pass:3}[verdict(S,a).key]-{strong:0,solid:1,gamble:2,pass:3}[verdict(S,b).key]));
+  return `<section class="panel" id="p-hire"><header><h2>Hiring desk</h2><span class="post"><label class="lbl" for="post-role">Post a job</label><select id="post-role">${postOptions()}</select><button class="btn sm" data-act="post-sel">Post</button></span></header>
+  ${cs.length?`<div class="cands">${cs.map(candCard).join('')}</div>`:`<div class="empty">No applicants right now. New people apply every month, or post a job above to get two applicants today.</div>`}
+  <p class="hint" style="margin:10px 0 0">Interview scores can be off by a star; a VP in the department sharpens them. Talent shows up in output once someone is hired.</p></section>`;
+}
+function payLabel(k){return D.includes(k)?S.ind.t[k]:k==='mgr'?'Managers':k==='vp'?'Vice presidents':k==='coo'?'COO':'CFO';}
+function payRow(k,count){
+  const r=ratio(S,k),st=MKT[k]>=10000?500:100;
+  const tag=Math.abs(r-1)<.03?'<span class="pill muted">market</span>':r<1?`<span class="pill ${r<.9?'bad':'warn'}">${pct(1-r)} below</span>`:`<span class="pill good">${pct(r-1)} above</span>`;
+  return `<div class="payrow"><span class="rl"><b>${esc(payLabel(k))}</b><small>${fmtN(count)} ${count===1?'person':'people'} · market ${fmt$(MKT[k])}</small></span><output id="o-pay-${k}">${fmt$(S.pay[k])}</output>
+  <input type="range" id="pay-${k}" min="${Math.round(MKT[k]*.6/st)*st}" max="${Math.round(MKT[k]*1.6/st)*st}" step="${st}" value="${S.pay[k]}" aria-label="Monthly pay for ${esc(payLabel(k))}">
+  <span class="meta"><span id="t-pay-${k}">${tag}</span><span id="c-pay-${k}">${fmt$(S.pay[k]*count)}/mo total</span></span></div>`;
+}
+function payView(){
+  return `<section class="panel" id="p-pay"><header><h2>Pay</h2><button class="btn sm" data-act="paymkt">Reset to market</button></header>
+  <p class="hint" style="margin:0 0 6px">Monthly pay for each role. Below 90% of market, people quit and candidates refuse. Above market lifts morale, effort and acceptance.</p>
+  <div class="pay">${payGroups(S).map(([k,c])=>payRow(k,c)).join('')}</div></section>`;
+}
+function financeView(){
+  const L=S.last,hc=headcount(S),bonus=hc*600,room=maxDebt(S)-S.debt,ec=expandCost(S);
+  const rows=L?[['Revenue',L.revenue],['Cost of goods',-L.cogs],['Payroll',-L.payroll],['Rent',-L.rent],['Marketing',-L.mkt],['R&D',-L.rd],['Interest',-L.interest]]:[];
+  return `<section class="panel" id="p-fin"><header><h2>Finance</h2><span class="hint">${L?'Last month':'No books yet'}</span></header>
+  ${L?`<table class="ledger"><tbody>${rows.map(([k,v])=>`<tr><td>${k}</td><td class="${v<0?'':'good'}">${fmt$(v)}</td></tr>`).join('')}<tr class="tot"><td>Profit</td><td class="${L.profit<0?'bad':'good'}">${fmt$(L.profit)}</td></tr></tbody></table>`:'<p class="hint">Run your first month to see a profit and loss statement.</p>'}
+  <div class="actions">
+    <div class="row"><span class="rl">Bank debt ${fmt$(S.debt)}<small>1.2% interest a month · limit ${fmt$(maxDebt(S))}</small></span><span class="confirm"><button class="btn sm" data-act="borrow" ${room<1000||S.over?'disabled':''}>Borrow ${fmt$(Math.min(50000,Math.max(0,room)))}</button><button class="btn sm" data-act="repay" ${S.debt<=0||S.cash<Math.min(50000,S.debt)?'disabled':''}>Repay</button></span></div>
+    <div class="row"><span class="rl">Funding round<small>${canRaise(S)?`Investors offer ${fmt$(raiseAmt(S))} for 20%`:S.month-S.lastRaise<6?`Next round in ${6-(S.month-S.lastRaise)} months`:'Needs revenue first'} · you own ${pct(S.equity)}</small></span><button class="btn sm" data-act="raise" ${canRaise(S)?'':'disabled'}>Raise</button></div>
+    <div class="row"><span class="rl">Expand<small>${S.regions<REGIONS.length?`Open the ${REGIONS[S.regions].toLowerCase()} market`:'Already global'}</small></span><button class="btn sm" data-act="expand" ${S.regions>=REGIONS.length||S.cash<ec?'disabled':''}>${S.regions<REGIONS.length?fmt$(ec):'Done'}</button></div>
+    <div class="row"><span class="rl">Team bonus<small>$600 a head, one time · morale +12</small></span><button class="btn sm" data-act="bonus" ${S.cash<bonus?'disabled':''}>${fmt$(bonus)}</button></div>
+  </div></section>`;
+}
+function chartView(){
+  const h=S.hist.slice(-24);
+  if(h.length<2)return `<section class="panel"><header><h2>Revenue and expenses</h2></header><p class="hint">The trend appears after two months.</p></section>`;
+  const W=640,H=210,l=52,r=14,t=12,b=26,mx=Math.max(1,...h.map(x=>Math.max(x.rev,x.exp)));
+  const X=i=>l+(W-l-r)*i/(h.length-1),Y=v=>t+(H-t-b)*(1-v/mx);
+  const pr=h.map((x,i)=>`${X(i).toFixed(1)},${Y(x.rev).toFixed(1)}`).join(' '),pe=h.map((x,i)=>`${X(i).toFixed(1)},${Y(x.exp).toFixed(1)}`).join(' ');
+  const ticks=[0,.5,1].map(f=>`<line class="grid-l" x1="${l}" x2="${W-r}" y1="${Y(mx*f)}" y2="${Y(mx*f)}"/><text x="${l-6}" y="${Y(mx*f)+3}" text-anchor="end">${fmt$(mx*f)}</text>`).join('');
+  const last=h[h.length-1];
+  return `<section class="panel"><header><h2>Revenue and expenses</h2><span class="legend" style="margin:0"><span><i style="width:14px;height:2px;background:var(--accent)"></i>Revenue</span><span><i style="width:14px;height:0;border-top:2px dashed var(--bad)"></i>Expenses</span></span></header>
+  <svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Monthly revenue and expenses, last ${h.length} months">${ticks}
+  <polygon class="area" points="${l},${Y(0)} ${pr} ${X(h.length-1)},${Y(0)}"/><polyline class="exp" points="${pe}"/><polyline class="rev" points="${pr}"/>
+  <circle class="end" cx="${X(h.length-1)}" cy="${Y(last.rev)}" r="4"/>
+  <text x="${l}" y="${H-6}">${monthLabel(h[0].m)}</text><text x="${W-r}" y="${H-6}" text-anchor="end">${monthLabel(last.m)}</text></svg></section>`;
+}
+function msView(){return `<section class="panel"><header><h2>Milestones</h2><span class="hint num">${MS.filter(m=>S.ms[m[0]]!=null).length} of ${MS.length}</span></header><ul class="ms">${MS.map(([id,l])=>`<li class="${S.ms[id]!=null?'done':''}"><i>${S.ms[id]!=null?'✓':''}</i>${esc(l)}${S.ms[id]!=null?` <span class="hint">· ${monthLabel(Math.max(0,S.ms[id]-1))}</span>`:''}</li>`).join('')}</ul></section>`;}
+function logView(){return `<section class="panel"><header><h2>Company log</h2>${confirmNew?`<span class="confirm"><span class="hint">Erase this company?</span><button class="btn sm danger" data-act="new-yes">Erase</button><button class="btn sm" data-act="new-no">Keep</button></span>`:`<button class="btn sm" data-act="new">New company</button>`}</header><ul class="log">${S.log.map(e=>`<li class="${e.k}"><span>${monthLabel(Math.max(0,e.m-1))}</span><b>${esc(e.t)}</b></li>`).join('')}</ul></section>`;}
+function howView(){return `<section class="panel"><details class="how"><summary>How the company works</summary><ul>
+  <li>Leads come from marketing spend and from ${esc(S.ind.t.sales.toLowerCase())}. Conversion rises with quality and reputation and falls as price climbs above the market.</li>
+  <li>Each of your ${esc(S.ind.t.ops.toLowerCase())} produces enough for about ${SERVE} customers. Unmet demand hurts reputation and drives customers away.</li>
+  <li>${esc(S.ind.t.support)} each cover about ${SUP} customers. Without enough of them, churn climbs.</li>
+  <li>${esc(S.ind.t.product)} and R&D raise quality, which slowly decays on its own.</li>
+  <li>Candidates apply every month and stay available for three. Their real talent (1 to 5) is hidden; the interview score is a noisy guess, and red flags hint at problems. Job hoppers often leave within months. Talent raises a department's output.</li>
+  <li>Everyone on staff brings in customers by word of mouth, scaled by their customer pull: sales and support most, product least. Managers, VPs and executives bring in more through their networks.</li>
+  <li>Whether someone accepts depends on your pay against their ask, your reputation, morale and how keen they are. A signing bonus helps close the gap.</li>
+  <li>You set pay for each role. Below 90% of market, people quit every month and pay complaints arrive. Managers, VPs and executives below 85% may resign.</li>
+  <li>You can directly run ${CEO_SPAN} people. Past that, anyone without a manager works at half speed. A manager runs ${SPAN}. A department can hold 3 managers before it needs a VP. A third VP needs a COO.</li>
+  <li>Agency hires (+ on staff) are quick, average talent, and cost half a month's pay; some refuse if your pay is low. Letting people go costs a month of severance and hurts morale.</li>
+  <li>Valuation is annual revenue times a multiple that grows with recent growth, quality and reputation, plus net cash.</li></ul></details></section>`;}
+
+/* ---------- live floor ---------- */
+const SCN={
+  restaurant:{prod:'stove',seat:'table4',item:'plate',hat:'chef',zp:'Kitchen',zs:'Dining room',dwell:10,cook:3,visit:1,idea:'Testing a new recipe',bench:'Test kitchen'},
+  coffee:{prod:'espresso',seat:'table2',item:'cup',hat:'chef',zp:'Roastery bar',zs:'Café',dwell:7,cook:2,visit:1,idea:'Trying a new blend',bench:'Roasting lab'},
+  tacos:{prod:'grill',seat:'picnic',item:'plate',hat:'chef',zp:'Taco truck',zs:'Picnic area',dwell:7,cook:2,visit:2,idea:'New salsa?',bench:'Prep table',truck:true},
+  oil:{prod:'pumpjack',seat:'pump',item:'fuel',hat:'hard',zp:'Oil field',zs:'Gas station',dwell:7,cook:1.5,visit:12,idea:'Surveying a new well',bench:'Survey tent',cars:true},
+  sneakers:{prod:'conveyor',seat:'shelf',item:'bag',hat:'hard',zp:'Factory',zs:'Flagship store',dwell:6,cook:2,visit:1,idea:'Sketching a new design',bench:'Design studio'},
+  toys:{prod:'conveyor',seat:'shelf',item:'bag',hat:'hard',zp:'Workshop',zs:'Toy store',dwell:6,cook:2,visit:1,idea:'Building a prototype',bench:'Design studio'},
+  ebikes:{prod:'assembly',seat:'showbike',item:'bike',hat:'hard',zp:'Assembly line',zs:'Showroom',dwell:7,cook:3,visit:1,idea:'Testing a new motor',bench:'Engineering lab'},
+  saas:{prod:'rack',seat:'desk',item:'laptop',hat:'none',zp:'Server room',zs:'Customer lounge',dwell:8,cook:2,visit:1,idea:'Shipping a feature',bench:'Dev desks'},
+  clothing:{prod:'conveyor',seat:'clothes',item:'bag',hat:'none',zp:'Stockroom',zs:'Store',dwell:7,cook:2,visit:1,idea:'Sketching next season',bench:'Design studio'},
+  custom:{prod:'conveyor',seat:'shelf',item:'box',hat:'hard',zp:'Workshop',zs:'Shop',dwell:6,cook:2,visit:1,idea:'Improving the product',bench:'Product lab'}
+};
+let floorOpen=true;try{floorOpen=localStorage.getItem('co-floor')!=='0';}catch(e){}
+const Floor=(()=>{
+  const W=1000,H=430,DX=712,SR={x:372,y:122,w:606,h:250},PX=328,PASSY=150;
+  const UNI={ops:'#E0782F',support:'#1FA187',sales:'#D9487E',product:'#8B5BD6'};
+  const SKIN=['#F1C9A5','#E0AC82','#C68E62','#9B6A43','#6E4A2E','#F5D7BD'];
+  const CLO=['#5C7CFA','#94A3B8','#F59F00','#12B886','#E64980','#868E96','#4DABF7','#82C91E','#FF8787','#B197FC','#FAB005','#20C997'];
+  const TYPES={table4:{cw:120,ch:83,sp:[[-26,0],[26,0],[0,-24],[0,24]]},table2:{cw:92,ch:83,sp:[[-21,0],[21,0]]},picnic:{cw:150,ch:83,sp:[[-30,-21],[0,-21],[30,-21],[-30,21],[0,21],[30,21]]},
+    pump:{cw:150,ch:83,sp:[[-36,0],[36,0]]},shelf:{cw:150,ch:83,sp:[[-34,-21],[0,-21],[34,-21],[-34,21],[0,21],[34,21]]},showbike:{cw:120,ch:83,sp:[[-32,0],[32,0]]},desk:{cw:120,ch:83,sp:[[-16,25],[16,25]]},clothes:{cw:150,ch:83,sp:[[-34,-21],[0,-21],[34,-21],[-34,21],[0,21],[34,21]]}};
+  let wrap,cv,ctx,C={},cfg=SCN.custom,info={},furn=[],spots=[],stations=[],staff=[],cust=[],orders=[],fx=[],queue=[],acc=0,sig='',ikey='',hover=null,reduce=false,seen=true,open=true,raf=0,last=0,now=0,served=0,lost=0,capT=0,welcomeT=0;
+  const pick=a=>a[Math.floor(Math.random()*a.length)],rand=(a,b)=>a+Math.random()*(b-a);
+  function colors(){const cs=getComputedStyle(document.documentElement);for(const k of ['paper','surface','sunk','ink','muted','line','accent','accent-soft','memo','good','bad','warn'])C[k]=cs.getPropertyValue('--'+k).trim()||'#888';}
+  function resize(){if(!cv)return;const d=Math.min(2,window.devicePixelRatio||1);cv.width=W*d;cv.height=H*d;ctx.setTransform(d,0,0,d,0,0);draw();}
+  function mount(slot){
+    if(!slot)return;
+    if(!wrap){
+      wrap=document.createElement('div');wrap.className='floor-scroll';cv=document.createElement('canvas');cv.className='floor';cv.setAttribute('role','img');wrap.appendChild(cv);ctx=cv.getContext('2d');
+      reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+      cv.addEventListener('mousemove',e=>{const r=cv.getBoundingClientRect();hover={x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height};if(!raf)draw();});
+      cv.addEventListener('mouseleave',()=>{hover=null;if(!raf)draw();});
+      if('IntersectionObserver' in window)new IntersectionObserver(es=>{seen=es[0].isIntersecting;tick();}).observe(wrap);
+      document.addEventListener('visibilitychange',tick);
+      const re=()=>{colors();if(!raf)draw();};
+      matchMedia('(prefers-color-scheme: dark)').addEventListener('change',re);
+      new MutationObserver(re).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+      window.addEventListener('resize',resize);
+      colors();resize();
+    }
+    slot.appendChild(wrap);colors();
+  }
+  function stop(){open=false;tick();}
+  function tick(){const go=open&&seen&&!document.hidden&&!reduce&&wrap&&wrap.isConnected;if(go&&!raf){last=performance.now();raf=requestAnimationFrame(loop);}else if(!go&&raf){cancelAnimationFrame(raf);raf=0;}}
+  function loop(ts){const dt=Math.min(.05,(ts-last)/1000);last=ts;step(dt);draw();raf=requestAnimationFrame(loop);}
+
+  /* ----- layout from the game state ----- */
+  function update(s,pr,isOpen){
+    open=isOpen;if(!open){tick();return;}
+    cfg=SCN[s.ind.key]||SCN.custom;
+    const T=TYPES[cfg.seat],cols=Math.floor(SR.w/T.cw),rows=Math.floor(SR.h/T.ch);
+    const units=clamp(2+Math.round(Math.log10(1+s.customers)*1.6),2,cols*rows);
+    const n={ops:Math.min(s.depts.ops.emp,8),support:Math.min(s.depts.support.emp,6),sales:Math.min(s.depts.sales.emp,3),product:Math.min(s.depts.product.emp,3),mgr:Math.min(mgrCount(s),5)};
+    const office=[{n:'You',t:'CEO',tie:C.memo}];
+    if(s.execs.coo)office.push({n:s.execs.coo.n,t:'COO',tie:'#C9A227'});
+    if(s.execs.cfo)office.push({n:s.execs.cfo.n,t:'CFO',tie:'#C9A227'});
+    for(const d of D)if(s.depts[d].vp)office.push({n:s.depts[d].vp.n,t:'VP of '+DN[d],tie:'#C9A227',d});
+    const mgrs=D.flatMap(d=>s.depts[d].mgr.map(m=>({n:m.n,t:DN[d]+' manager'})));
+    info={customers:s.customers,util:clamp(.2+Math.log10(1+s.customers)/4.5,.2,1)*clamp(pr.demand/Math.max(1,pr.capacity),.5,1.6),fulfill:pr.fulfill,quality:s.quality,morale:s.morale,price:s.price,ind:s.ind,
+      tot:{ops:s.depts.ops.emp,support:s.depts.support.emp,sales:s.depts.sales.emp,product:s.depts.product.emp,mgr:mgrCount(s)}};
+    const sg=[s.ind.key,units,n.ops,n.support,n.sales,n.product,n.mgr,office.map(o=>o.n).join(',')].join('|');
+    if(sg!==sig){const relayout=s.ind.key!==ikey||!furn.length||furn.length!==units;sig=sg;ikey=s.ind.key;
+      if(relayout)layout(units,T,cols);
+      buildStaff(s,n,office,mgrs);
+      if(relayout)prefill();}
+    tick();if(!raf)draw();caption();
+  }
+  function layout(units,T,cols){
+    furn=[];spots=[];cust=[];orders=[];queue=[];fx=[];
+    const rowsUsed=Math.ceil(units/cols);
+    for(let i=0;i<units;i++){const c=i%cols,r=Math.floor(i/cols);
+      const x=SR.x+T.cw/2+c*T.cw+(SR.w-cols*T.cw)/2,y=SR.y+T.ch/2+r*T.ch+(rowsUsed<3?(SR.h-rowsUsed*T.ch)/3:0);
+      const f={x,y};furn.push(f);for(const [dx,dy] of T.sp)spots.push({x:x+dx,y:y+dy,f,occ:null});}
+  }
+  function prefill(){
+    const k=Math.round(spots.length*Math.min(.85,info.util*.75));
+    const free=[...spots].sort(()=>Math.random()-.5).slice(0,k);
+    for(const sp of free){const c=mkCust(sp.x,sp.y);c.state='eat';c.until=now+rand(2,cfg.dwell*1.6);c.item=true;sp.occ=c;c.spot=sp;cust.push(c);}
+  }
+  function stationPos(i,n){const col=i%2,row=Math.floor(i/2);return {x:col?236:96,y:84+row*64};}
+  function buildStaff(s,n,office,mgrs){
+    for(const o of orders)if(o.st==='taken'||o.st==='carried')o.st='ready';
+    const one=s.ind.one;staff=[];stations=[];
+    const ns=Math.max(1,n.ops);
+    for(let i=0;i<ns;i++){const p=stationPos(i,ns);stations.push({x:p.x,y:p.y,busy:0,ph:Math.random()*6});}
+    for(let i=0;i<n.ops;i++){const st=stations[i];staff.push(mk('ops',st.x+(cfg.prod==='pumpjack'?30:0),st.y+26,{stn:st,title:one.ops}));}
+    for(let i=0;i<n.support;i++)staff.push(mk('support',364+(i%2)*20,170+Math.floor(i/2)*44,{title:one.support}));
+    for(let i=0;i<n.sales;i++)staff.push(mk('sales',DX-44-i*26,352,{title:one.sales}));
+    for(let i=0;i<n.product;i++)staff.push(mk('product',70+i*80,356,{title:one.product}));
+    for(let i=0;i<n.mgr;i++){const m=mgrs[i]||{n:person(),t:'Manager'};staff.push(mk('mgr',rand(380,960),rand(140,350),{name:m.n,title:m.t,next:now+rand(0,2)}));}
+    office.slice(0,9).forEach((o,i)=>staff.push(mk('exec',384+i*66,52,{name:o.n,title:o.t,tie:o.tie,desk:true,next:now+rand(8,20)})));
+    for(const a of staff)if(a.kind==='ops'||a.kind==='support')a.state='idle';
+  }
+  function mk(kind,x,y,o){return Object.assign({kind,x,y,home:{x,y},path:[],sp:kind==='exec'?50:70,skin:pick(SKIN),name:o.name||person(),bob:Math.random()*6,walk:0,state:'idle',next:now+rand(2,8)},o);}
+  function mkCust(x,y){return {kind:'cust',x,y,path:[],sp:cfg.cars?230:55,clo:pick(CLO),skin:pick(SKIN),state:'in',bob:Math.random()*6,walk:0,ang:0};}
+
+  /* ----- simulation ----- */
+  const runners=()=>{const s=staff.filter(a=>a.kind==='support');return s.length?s:staff.filter(a=>a.kind==='ops');};
+  function seatPath(c,sp){sp.occ=c;c.spot=sp;c.state='in';const sy=cfg.cars?414:408;c.path=[{x:DX,y:sy},{x:DX,y:364},{x:sp.x,y:sp.y}];}
+  function placeQueue(){queue.forEach((c,i)=>{c.path=[cfg.cars?{x:DX-46-i*36,y:414}:{x:DX+40+i*20,y:408}];});}
+  function spawn(){
+    const free=spots.filter(s=>!s.occ);
+    if(!free.length&&queue.length>=6)return;
+    const fromL=cfg.cars?true:Math.random()<.5;const c=mkCust(cfg.cars?DX-420:(fromL?-24:W+24),cfg.cars?414:408);cust.push(c);
+    if(free.length&&!queue.length)seatPath(c,pick(free));else{c.state='queue';c.pat=now+rand(7,11);queue.push(c);placeQueue();}
+  }
+  function leave(c,happy){
+    if(c.spot){c.spot.occ=null;c.spot=null;}
+    c.state='out';c.item=false;const sy=cfg.cars?414:408;
+    c.path=[{x:DX,y:364},{x:DX,y:sy},{x:cfg.cars?W+30:(Math.random()<.5?-30:W+30),y:sy}];
+    if(happy){served++;fx.push({x:c.x,y:c.y-22,txt:'+'+fmtP(info.price*cfg.visit),col:C.good,t0:now});
+      if(info.quality>=65&&Math.random()<.6)say(c,'♥',1.6,'#E64980');else if(info.quality<40&&Math.random()<.5)say(c,'meh',1.6);}
+  }
+  function say(a,txt,dur,col){a.bub={txt,until:now+dur,col};}
+  function moveAgent(a,dt){
+    if(!a.path.length){a.walk=0;return true;}
+    const p=a.path[0],dx=p.x-a.x,dy=p.y-a.y,d=Math.hypot(dx,dy),v=a.sp*(a.kind!=='cust'&&info.morale<45?.75:1)*dt;
+    if(d>.5)a.ang=Math.atan2(dy,dx);
+    if(d<=v){a.x=p.x;a.y=p.y;a.path.shift();}else{a.x+=dx/d*v;a.y+=dy/d*v;}
+    a.walk+=dt*12;return !a.path.length;
+  }
+  function step(dt){
+    now+=dt;
+    const rate=info.util*spots.length/(cfg.dwell+cfg.cook+4);
+    acc+=rate*dt;while(acc>=1){acc--;spawn();}
+    // queue
+    if(queue.length){const free=spots.filter(s=>!s.occ);if(free.length){const c=queue.shift();seatPath(c,pick(free));placeQueue();}}
+    for(const c of [...queue])if(now>c.pat){queue.splice(queue.indexOf(c),1);c.state='out';lost++;say(c,'!',1.8,C.bad);c.path=[{x:c.x<DX?-30:W+30,y:c.y}];placeQueue();}
+    // customers
+    for(const c of cust){
+      const arrived=moveAgent(c,dt);
+      if(c.state==='in'&&arrived){c.state='wait';orders.push({c,st:'cook',ready:now+cfg.cook/clamp(info.fulfill,.35,1)*rand(.8,1.3),stn:pick(stations)});
+        const s=staff.filter(a=>a.kind==='sales');if(s.length&&now>welcomeT){say(pick(s),cfg.cars?'Fill it up?':'Welcome!',1.4);welcomeT=now+2.5;}}
+      else if(c.state==='eat'&&now>c.until)leave(c,true);
+    }
+    cust=cust.filter(c=>!(c.state==='out'&&!c.path.length));
+    // kitchen
+    for(const st of stations)st.busy=Math.max(0,st.busy-dt);
+    for(const o of orders){if(o.st==='cook'){if(o.stn)o.stn.busy=.6;if(now>=o.ready){const used=new Set(orders.filter(x=>x.slot!=null).map(x=>x.slot));for(let i=0;i<8;i++)if(!used.has(i)){o.slot=i;o.st='ready';break;}}}}
+    const R=runners();
+    for(const o of orders)if(o.st==='ready'){const r=R.find(a=>a.state==='idle');if(!r)break;
+      r.state='toPass';r.order=o;o.st='taken';r.path=[{x:PX+28,y:PASSY+12+o.slot*22}];}
+    for(const a of staff){
+      const arrived=moveAgent(a,dt);
+      if(a.kind==='ops'||a.kind==='support'){
+        if(a.state==='toPass'&&arrived){a.carry=cfg.item!=='fuel';a.order.st='carried';a.order.slot=null;const c=a.order.c,sp=c.spot;
+          const side=sp?(sp.x<sp.f.x?-14:sp.x>sp.f.x?14:0):0;a.state='toCust';a.path=[{x:(sp?sp.x:c.x)+side,y:(sp?sp.y:c.y)+(side?0:(sp&&sp.y<sp.f.y?-14:14))}];}
+        else if(a.state==='toCust'&&arrived){if(cfg.item==='fuel'&&!a.fuelT){a.fuelT=now+1.6;}
+          if(!a.fuelT||now>a.fuelT){a.fuelT=0;const c=a.order.c;if(c.state==='wait'){c.state='eat';c.until=now+cfg.dwell*rand(.8,1.25);c.item=true;}
+            orders=orders.filter(o=>o!==a.order);a.order=null;a.carry=false;a.state='back';a.path=[{x:a.home.x,y:a.home.y}];}}
+        else if(a.state==='back'&&arrived)a.state='idle';
+        else if(a.kind==='ops'&&a.state==='idle'&&cfg.prod==='pumpjack'&&now>a.next){a.next=now+rand(5,9);a.state='stroll';a.path=[{x:a.home.x+rand(-40,30),y:a.home.y+rand(-20,20)},{x:a.home.x,y:a.home.y}];}
+        else if(a.state==='stroll'&&arrived)a.state='idle';
+      }else if(a.kind==='sales'){
+        if(a.state==='idle'&&now>a.next){a.next=now+rand(9,16);a.state='flyer';a.path=[{x:DX,y:364},{x:DX+rand(-60,90),y:404}];}
+        else if(a.state==='flyer'&&arrived){say(a,`Try ${info.ind.key==='oil'?'our fuel':'us'}!`,1.6);a.state='flyback';a.path=[{x:DX,y:364},{x:a.home.x,y:a.home.y}];}
+        else if(a.state==='flyback'&&arrived)a.state='idle';
+      }else if(a.kind==='product'){
+        if(now>a.next){a.next=now+rand(8,15);if(Math.random()<.5)say(a,cfg.idea,2.2);}
+      }else if(a.kind==='mgr'){
+        if(a.state==='idle'&&now>a.next){const t=pick(staff.filter(s=>s.kind!=='mgr'&&s.kind!=='exec'))||{x:rand(380,960),y:rand(140,350)};a.target=t;a.state='go';a.path=[{x:t.x+16,y:t.y+2}];}
+        else if(a.state==='go'&&arrived){a.state='idle';a.next=now+rand(1.8,3.2);if(Math.random()<.35)say(a,info.morale>=60?pick(['Nice work','Great job','Keep it up']):pick(['Pick it up','We are behind']),1.6);}
+      }else if(a.kind==='exec'){
+        if(a.state==='idle'&&now>a.next&&a.title!=='CEO'){a.next=now+rand(14,26);a.state='tour';a.path=[{x:a.x,y:92},{x:930,y:106},{x:rand(400,950),y:rand(150,340)}];}
+        else if(a.state==='tour'&&arrived){a.state='tourback';a.path=[{x:930,y:106},{x:a.home.x,y:92},{x:a.home.x,y:a.home.y}];if(Math.random()<.4)say(a,'How is it going?',1.6);}
+        else if(a.state==='tourback'&&arrived){a.state='idle';a.next=now+rand(14,26);}
+      }
+    }
+    fx=fx.filter(f=>now-f.t0<1.3);
+    capT+=dt;if(capT>.5){capT=0;caption();}
+  }
+  function caption(){const el=document.getElementById('floor-cap');if(!el)return;const occ=spots.filter(s=>s.occ).length;
+    el.textContent=`${occ} of ${spots.length} ${cfg.cars?'pumps':['shelf','showbike','clothes'].includes(cfg.seat)?'browsing spots':'seats'} in use · ${queue.length} waiting outside · ${served} served · ${lost} walked away`;}
+
+  /* ----- drawing ----- */
+  const rr=(x,y,w,h,r)=>{ctx.beginPath();ctx.roundRect?ctx.roundRect(x,y,w,h,r):ctx.rect(x,y,w,h);};
+  const circ=(x,y,r)=>{ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);};
+  function label(t,x,y,al='left'){ctx.font='600 10px "IBM Plex Mono", ui-monospace, monospace';ctx.fillStyle=C.muted;ctx.textAlign=al;ctx.fillText(t.toUpperCase(),x,y);}
+  function item(x,y,kind){
+    ctx.save();
+    if(kind==='plate'){ctx.fillStyle='#fff';circ(x,y,4.5);ctx.fill();ctx.strokeStyle='#ccc';ctx.lineWidth=.8;ctx.stroke();ctx.fillStyle='#E0782F';circ(x-1,y,1.8);ctx.fill();ctx.fillStyle='#82C91E';circ(x+1.5,y-1,1.2);ctx.fill();}
+    else if(kind==='cup'){ctx.fillStyle='#fff';rr(x-3,y-3,6,7,1.5);ctx.fill();ctx.fillStyle='#7B4B2A';circ(x,y-2,2);ctx.fill();}
+    else if(kind==='box'){ctx.fillStyle='#C08A55';rr(x-4,y-3.5,8,7,1);ctx.fill();ctx.strokeStyle='#8a5f36';ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(x-4,y);ctx.lineTo(x+4,y);ctx.stroke();}
+    else if(kind==='bag'){ctx.fillStyle='#D9487E';rr(x-4,y-3,8,8,1.5);ctx.fill();ctx.strokeStyle='#8a2a4e';ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y-3,2.5,Math.PI,0);ctx.stroke();}
+    else if(kind==='laptop'){ctx.fillStyle='#9AA3AE';rr(x-5,y-3,10,6,1);ctx.fill();ctx.fillStyle='#4DABF7';ctx.fillRect(x-4,y-2,8,3.5);}
+    else if(kind==='bike'){ctx.strokeStyle=C.ink;ctx.lineWidth=1.2;circ(x-4,y+1,2.6);ctx.stroke();circ(x+4,y+1,2.6);ctx.stroke();ctx.beginPath();ctx.moveTo(x-4,y+1);ctx.lineTo(x,y-2);ctx.lineTo(x+4,y+1);ctx.stroke();}
+    ctx.restore();
+  }
+  function drawP(a,body,o={}){
+    const x=a.x,y=a.y,b=Math.sin(a.bob+now*(o.busy?9:2))*(o.busy?1.2:.5);
+    ctx.fillStyle='rgba(0,0,0,.14)';ctx.beginPath();ctx.ellipse(x,y+11,7,2.4,0,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle=C.ink;ctx.lineWidth=2;ctx.lineCap='round';const k=a.walk?Math.sin(a.walk)*2.6:0;
+    ctx.beginPath();ctx.moveTo(x-2.6,y+4);ctx.lineTo(x-2.6+k,y+10);ctx.moveTo(x+2.6,y+4);ctx.lineTo(x+2.6-k,y+10);ctx.stroke();
+    ctx.fillStyle=body;rr(x-6,y-6+b,12,12,4);ctx.fill();
+    if(o.apron){ctx.fillStyle='rgba(255,255,255,.85)';rr(x-4,y-2+b,8,8,2);ctx.fill();}
+    if(o.tie){ctx.fillStyle=o.tie;ctx.fillRect(x-1,y-5+b,2,8);}
+    ctx.fillStyle=a.skin;circ(x,y-10+b,5);ctx.fill();
+    if(o.hat==='chef'){ctx.fillStyle='#fff';ctx.fillRect(x-4,y-17+b,8,4);circ(x,y-18+b,4.3);ctx.fill();ctx.strokeStyle='rgba(0,0,0,.15)';ctx.lineWidth=.6;ctx.stroke();}
+    else if(o.hat==='hard'){ctx.fillStyle='#F2C230';ctx.beginPath();ctx.arc(x,y-11+b,5.6,Math.PI,0);ctx.fill();ctx.fillRect(x-7,y-11.5+b,14,1.6);}
+    else if(o.hair){ctx.fillStyle=o.hair;ctx.beginPath();ctx.arc(x,y-11+b,5.2,Math.PI*1.05,Math.PI*1.95);ctx.fill();}
+    if(o.clip){ctx.fillStyle=C.memo;rr(x+5,y-3+b,6,8,1);ctx.fill();ctx.strokeStyle=C.ink;ctx.lineWidth=.6;ctx.stroke();}
+    if(o.carry)item(x+8,y-5+b,cfg.item);
+  }
+  function car(c){
+    ctx.save();ctx.translate(c.x,c.y);ctx.rotate(c.path.length?c.ang:(c.spot?Math.PI/2:0));
+    ctx.fillStyle='rgba(0,0,0,.15)';rr(-14,-7,30,16,4);ctx.fill();
+    ctx.fillStyle=c.clo;rr(-15,-8,30,16,4);ctx.fill();ctx.fillStyle='rgba(255,255,255,.55)';rr(-4,-6,9,12,2);ctx.fill();
+    ctx.restore();
+  }
+  function bubble(a){
+    if(!a.bub||now>a.bub.until)return;const t=a.bub.txt;ctx.font='500 10px "IBM Plex Sans", system-ui, sans-serif';const w=ctx.measureText(t).width+10,x=a.x-w/2,y=a.y-38;
+    ctx.fillStyle=a.bub.col||C.surface;rr(x,y,w,15,7);ctx.fill();if(!a.bub.col){ctx.strokeStyle=C.line;ctx.lineWidth=1;ctx.stroke();}
+    ctx.fillStyle=a.bub.col?'#fff':C.ink;ctx.textAlign='center';ctx.fillText(t,a.x,y+11);
+  }
+  function drawStation(st){
+    const x=st.x,y=st.y,busy=st.busy>0;ctx.save();
+    if(cfg.prod==='stove'||cfg.prod==='grill'){ctx.fillStyle='#3A3F4B';rr(x-24,y-14,48,26,4);ctx.fill();
+      for(const [dx,dy] of [[-12,-5],[12,-5],[-12,5],[12,5]]){ctx.fillStyle=busy?'#FF7A2F':'#5B6270';circ(x+dx,y+dy,4);ctx.fill();}
+      if(cfg.prod==='grill'){ctx.strokeStyle='#888';ctx.lineWidth=1;for(let i=-18;i<=18;i+=6){ctx.beginPath();ctx.moveTo(x+i,y-11);ctx.lineTo(x+i,y+9);ctx.stroke();}}
+      if(busy&&Math.random()<.25)fx.push({x:x+rand(-14,14),y:y-14,steam:1,t0:now});}
+    else if(cfg.prod==='espresso'){ctx.fillStyle='#9AA3AE';rr(x-20,y-14,40,24,4);ctx.fill();ctx.fillStyle='#5B6270';ctx.fillRect(x-12,y+2,8,4);ctx.fillRect(x+4,y+2,8,4);ctx.fillStyle='#7B4B2A';circ(x+28,y-2,9);ctx.fill();
+      ctx.strokeStyle='#4a2c18';ctx.lineWidth=1.4;ctx.beginPath();const ang=now*(busy?5:1);ctx.moveTo(x+28,y-2);ctx.lineTo(x+28+Math.cos(ang)*8,y-2+Math.sin(ang)*8);ctx.stroke();
+      if(busy&&Math.random()<.2)fx.push({x:x+rand(-8,8),y:y-14,steam:1,t0:now});}
+    else if(cfg.prod==='pumpjack'){const ang=Math.sin(now*1.7+st.ph)*.32;ctx.fillStyle='#5B6270';ctx.fillRect(x-22,y+8,44,5);
+      ctx.strokeStyle='#6E7581';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x-8,y+8);ctx.lineTo(x,y-10);ctx.lineTo(x+8,y+8);ctx.stroke();
+      ctx.save();ctx.translate(x,y-10);ctx.rotate(ang);ctx.strokeStyle='#C2410C';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-24,0);ctx.lineTo(22,0);ctx.stroke();ctx.fillStyle='#C2410C';rr(20,-3,7,12,2);ctx.fill();ctx.fillStyle='#3A3F4B';circ(-24,4,5);ctx.fill();ctx.restore();
+      ctx.strokeStyle='#3A3F4B';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x+24,y-10+Math.sin(ang)*24+6);ctx.lineTo(x+24,y+12);ctx.stroke();}
+    else if(cfg.prod==='rack'){ctx.fillStyle='#2B303B';rr(x-14,y-20,28,38,3);ctx.fill();for(let r=0;r<6;r++)for(let c=0;c<3;c++){const on=Math.sin(now*7+r*3.1+c*1.7+st.ph*9)>(busy?-.2:.4);ctx.fillStyle=on?(c===2?'#FAB005':'#51CF66'):'#444';ctx.fillRect(x-9+c*7,y-16+r*5.6,3,2.2);}}
+    else{/* conveyor & assembly: belt per row drawn in background; station = machine */ctx.fillStyle='#6E7581';rr(x-14,y-18,28,14,3);ctx.fill();ctx.fillStyle=busy?'#51CF66':'#999';circ(x+9,y-11,2);ctx.fill();}
+    ctx.restore();
+  }
+  function drawFurn(f){
+    const T=cfg.seat;ctx.save();ctx.strokeStyle=C.line;ctx.lineWidth=1.2;
+    if(T==='table4'){for(const [dx,dy] of TYPES.table4.sp){ctx.fillStyle=C.line;rr(f.x+dx*1.05-5,f.y+dy*1.05-5,10,10,3);ctx.fill();}ctx.fillStyle=C.surface;circ(f.x,f.y,16);ctx.fill();ctx.stroke();}
+    else if(T==='table2'){for(const [dx] of TYPES.table2.sp){ctx.fillStyle=C.line;rr(f.x+dx*1.1-5,f.y-5,10,10,3);ctx.fill();}ctx.fillStyle=C.surface;rr(f.x-12,f.y-12,24,24,4);ctx.fill();ctx.stroke();}
+    else if(T==='picnic'){ctx.fillStyle='#B07A4A';rr(f.x-48,f.y-9,96,18,3);ctx.fill();ctx.fillStyle='#8C5E36';ctx.fillRect(f.x-48,f.y-27,96,5);ctx.fillRect(f.x-48,f.y+22,96,5);}
+    else if(T==='pump'){ctx.strokeStyle=C.muted;ctx.setLineDash([4,4]);rr(f.x-52,f.y-22,32,44,2);ctx.stroke();rr(f.x+20,f.y-22,32,44,2);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle=C.surface;rr(f.x-8,f.y-24,16,48,4);ctx.fill();ctx.strokeStyle=C.line;ctx.stroke();ctx.fillStyle='#D9534F';rr(f.x-5,f.y-10,10,16,2);ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(f.x-3,f.y-7,6,4);}
+    else if(T==='shelf'){ctx.fillStyle='#A0785A';rr(f.x-52,f.y-7,104,14,3);ctx.fill();const cs=['#E64980','#4DABF7','#FAB005','#12B886','#B197FC'];for(let i=0;i<9;i++){ctx.fillStyle=cs[(i+Math.round(f.x))%5];ctx.fillRect(f.x-48+i*11,f.y-5,8,10);}}
+    else if(T==='clothes'){ctx.strokeStyle='#8A8F99';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(f.x-52,f.y-6);ctx.lineTo(f.x+52,f.y-6);ctx.stroke();const cs=['#E64980','#4DABF7','#FAB005','#12B886','#B197FC','#343A40','#F1F3F5'];for(let i=0;i<10;i++){const x=f.x-48+i*10.5;ctx.fillStyle=cs[(i*3+Math.round(f.y))%7];ctx.beginPath();ctx.moveTo(x-4,f.y-5);ctx.lineTo(x+4,f.y-5);ctx.lineTo(x+5,f.y+8);ctx.lineTo(x-5,f.y+8);ctx.closePath();ctx.fill();}}
+    else if(T==='showbike'){ctx.fillStyle=C.surface;circ(f.x,f.y,18);ctx.fill();ctx.stroke();ctx.save();ctx.translate(f.x,f.y);ctx.scale(2,2);item(0,0,'bike');ctx.restore();}
+    else if(T==='desk'){ctx.fillStyle=C.surface;rr(f.x-34,f.y-6,68,22,3);ctx.fill();ctx.stroke();item(f.x-16,f.y+4,'laptop');item(f.x+16,f.y+4,'laptop');}
+    ctx.restore();
+  }
+  function draw(){
+    if(!ctx)return;ctx.save();ctx.clearRect(0,0,W,H);
+    ctx.fillStyle=C.paper;ctx.fillRect(0,0,W,H);
+    // street
+    ctx.fillStyle=C.line;ctx.fillRect(0,394,W,H-394);ctx.strokeStyle=C.surface;ctx.lineWidth=2;ctx.setLineDash([16,12]);ctx.beginPath();ctx.moveTo(0,422);ctx.lineTo(W,422);ctx.stroke();ctx.setLineDash([]);
+    // building floors
+    ctx.fillStyle=C.sunk;ctx.fillRect(10,10,980,378);
+    if(cfg.prod==='pumpjack'){ctx.fillStyle='rgba(184,155,106,.35)';ctx.fillRect(10,10,PX-10,378);}
+    else{ctx.strokeStyle=C.line;ctx.lineWidth=.6;for(let x=10;x<PX;x+=24){ctx.beginPath();ctx.moveTo(x,10);ctx.lineTo(x,388);ctx.stroke();}for(let y=10;y<388;y+=24){ctx.beginPath();ctx.moveTo(10,y);ctx.lineTo(PX,y);ctx.stroke();}}
+    if(cfg.truck){ctx.fillStyle=C.surface;rr(26,40,290,282,14);ctx.fill();ctx.strokeStyle='#E0782F';ctx.lineWidth=3;ctx.stroke();ctx.fillStyle=C.ink;for(const y of [70,290]){circ(22,y,9);ctx.fill();circ(320,y,9);ctx.fill();}}
+    // office
+    ctx.fillStyle=C['accent-soft'];ctx.fillRect(PX+18,10,980-PX-8,92);ctx.strokeStyle=C.accent;ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(PX+18,102);ctx.lineTo(910,102);ctx.moveTo(950,102);ctx.lineTo(990,102);ctx.stroke();ctx.setLineDash([]);
+    // walls
+    ctx.strokeStyle=C.ink;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(DX-24,388);ctx.lineTo(10,388);ctx.lineTo(10,10);ctx.lineTo(990,10);ctx.lineTo(990,388);ctx.lineTo(DX+24,388);ctx.stroke();
+    ctx.fillStyle=C.memo;ctx.fillRect(DX-20,386,40,6);
+    // belts
+    if(cfg.prod==='conveyor'||cfg.prod==='assembly'){const rows=new Set(stations.map(s=>s.y));for(const y of rows){ctx.fillStyle='#4A505C';ctx.fillRect(30,y-4,PX-26,12);ctx.strokeStyle='#6E7581';ctx.lineWidth=1;for(let x=30+(now*30%10);x<PX;x+=10){ctx.beginPath();ctx.moveTo(x,y-4);ctx.lineTo(x,y+8);ctx.stroke();}
+      for(let k=0;k<5;k++){const x=30+((now*28+k*58)%(PX-36));if(cfg.prod==='assembly')item(x,y+1,'bike');else item(x,y+2,'box');}}}
+    // pass counter
+    ctx.fillStyle=C.surface;rr(PX,PASSY-10,18,196,3);ctx.fill();ctx.strokeStyle=C.line;ctx.lineWidth=1;ctx.stroke();
+    for(const o of orders)if(o.st==='ready'&&o.slot!=null&&cfg.item!=='fuel')item(PX+9,PASSY+12+o.slot*22,cfg.item);
+    // zone labels
+    const t=info.tot||{};
+    label(`${cfg.zp} · ${t.ops||0} ${(info.ind?info.ind.t.ops:'staff').toLowerCase()}`,22,cfg.truck?32:28);
+    label(`${cfg.bench} · ${t.product||0}`,22,340);
+    label('Executive office',PX+28,26);
+    label(`${cfg.zs} · ${t.support||0} ${(info.ind?info.ind.t.support:'').toLowerCase()} · ${t.mgr||0} managers`,PX+28,118);
+    label('Entrance',DX,384,'center');
+    for(const st of stations)drawStation(st);
+    if(cfg.prod!=='pumpjack'){ctx.fillStyle=C.surface;rr(40,348,270,20,3);ctx.fill();ctx.strokeStyle=C.line;ctx.stroke();}
+    for(const f of furn)drawFurn(f);
+    // office desks
+    for(const a of staff)if(a.desk){ctx.fillStyle=C.surface;rr(a.home.x-22,a.home.y+6,44,16,3);ctx.fill();ctx.strokeStyle=C.line;ctx.lineWidth=1;ctx.stroke();ctx.fillStyle=C.ink;ctx.fillRect(a.home.x-6,a.home.y+8,12,7);}
+    // items on tables
+    for(const c of cust)if(c.item&&c.spot&&!['shelf','showbike','pump','clothes'].includes(cfg.seat)){const f=c.spot.f;item(c.x+(f.x-c.x)*.5,c.y+(f.y-c.y)*.5,cfg.item);}
+    // people sorted by depth
+    const all=[...cust,...staff].sort((a,b)=>a.y-b.y);
+    const hair=['#2b1d14','#5a3b22','#c69c5d','#1f1f1f','#8a5a35'];
+    for(const a of all){
+      if(a.kind==='cust'){if(cfg.cars)car(a);else drawP(a,a.clo,{hair:hair[Math.floor(a.bob*10)%5],carry:a.item&&['shelf','showbike','clothes'].includes(cfg.seat),busy:a.state==='eat'&&cfg.seat!=='shelf'});}
+      else if(a.kind==='ops')drawP(a,UNI.ops,{hat:cfg.hat,apron:cfg.hat==='chef',carry:a.carry,busy:a.stn&&a.stn.busy>0&&!a.path.length});
+      else if(a.kind==='support')drawP(a,UNI.support,{apron:cfg.hat==='chef',carry:a.carry,hair:'#3b2a1e'});
+      else if(a.kind==='sales')drawP(a,UNI.sales,{hair:'#2b1d14'});
+      else if(a.kind==='product')drawP(a,UNI.product,{hair:'#5a3b22',busy:true});
+      else if(a.kind==='mgr')drawP(a,C.ink,{clip:true,hair:'#1f1f1f'});
+      else drawP(a,C.ink,{tie:a.tie,hair:'#3b2a1e'});
+    }
+    for(const a of all)bubble(a);
+    for(const f of fx){const k=(now-f.t0)/1.3;ctx.globalAlpha=Math.max(0,1-k);
+      if(f.steam){ctx.fillStyle=C.muted;circ(f.x+Math.sin(k*8)*2,f.y-k*18,2+k*3);ctx.fill();}
+      else{ctx.font='600 11px "IBM Plex Mono", monospace';ctx.fillStyle=f.col;ctx.textAlign='center';ctx.fillText(f.txt,f.x,f.y-k*22);}}
+    ctx.globalAlpha=1;
+    // hover
+    if(hover){let best=null,bd=16;for(const a of all){const d=Math.hypot(a.x-hover.x,a.y-4-hover.y);if(d<bd){bd=d;best=a;}}
+      if(best){const txt=best.kind==='cust'?(best.state==='queue'?'Customer · waiting outside':best.state==='wait'?'Customer · waiting for their order':best.state==='eat'?(cfg.cars?'Customer · filling up':cfg.seat==='table4'||cfg.seat==='table2'||cfg.seat==='picnic'?'Customer · eating':'Customer · shopping'):'Customer'):`${best.name} · ${best.title}`;
+        ctx.font='500 11px "IBM Plex Sans", system-ui, sans-serif';const w=ctx.measureText(txt).width+14;let x=clamp(best.x-w/2,4,W-w-4),y=best.y-50;if(y<4)y=best.y+18;
+        ctx.fillStyle=C.ink;rr(x,y,w,18,6);ctx.fill();ctx.fillStyle=C.paper;ctx.textAlign='left';ctx.fillText(txt,x+7,y+12.5);}}
+    ctx.restore();
+    cv.setAttribute('aria-label',`Live view of ${cfg.zp.toLowerCase()} and ${cfg.zs.toLowerCase()}: ${spots.filter(s=>s.occ).length} customers inside, ${queue.length} waiting outside.`);
+  }
+  return {mount,update,stop};
+})();
+const FLOOR_ON=['restaurant','sneakers','toys','clothing'];
+const hasFloor=()=>FLOOR_ON.includes(S.ind.key);
+function floorView(){
+  if(!hasFloor())return '';
+  const c=SCN[S.ind.key]||SCN.custom,t=S.ind.t;
+  const lg=[[`background:#E0782F`,t.ops],[`background:#1FA187`,t.support],[`background:#D9487E`,t.sales],[`background:#8B5BD6`,t.product],[`background:var(--ink)`,'Managers, VPs and you']];
+  return `<section class="panel floor-panel"><header><div class="fh"><span class="lbl">Live view</span><h2>${esc(c.zp)} and ${esc(c.zs.toLowerCase())}</h2></div><span class="fctl"><span class="hint" id="floor-cap"></span><button class="btn sm" data-act="floor">${floorOpen?'Hide':'Show live view'}</button></span></header>
+  ${floorOpen?`<div id="floor-slot"></div><div class="legend">${lg.map(([s,l])=>`<span><i class="dot" style="${s}"></i>${esc(l)}</span>`).join('')}<span>Hover anyone to see who they are</span></div>`:''}</section>`;
+}
+
+/* ---------- tutorial ---------- */
+const Tut=(()=>{
+  let i=-1,steps=[],hl=null,card=null;
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const seen=()=>{try{return localStorage.getItem('co-tut')==='1';}catch(e){return false;}};
+  function list(){
+    const t=S.ind.t,o=S.ind.one;
+    return [
+      {t:'Welcome, boss',b:`You just opened ${S.name}, a ${S.ind.name.toLowerCase()}. Your goal: hire people, win customers and grow until the company is worth $100 million. Each turn is one month. This tour shows you what to press.`},
+      {s:'.top .wrap',t:'Your scoreboard',b:'Cash is the money in the bank. Valuation is what the company is worth. If cash stays below zero for two months in a row, the company closes.'},
+      {s:'#p-levers',t:'Set your levers',b:'Drag the sliders to set your price, marketing and research. Marketing brings in customers; around $10k a month is a good start. The grey box shows what will happen this month before you play it.'},
+      {s:'#p-org',t:'Your org chart',b:'You are the CEO at the top. Below you are four departments. Each dot is one person. A hollow orange dot means nobody manages that person, so they work at half speed.'},
+      {s:'.depts .dept:nth-of-type(2)',t:`Hire ${t.ops.toLowerCase()}`,b:`Press + to hire one ${o.ops.toLowerCase()}, or +5 for five. Each one keeps about 450 customers supplied. Press + next to Managers to promote someone to manager. One manager runs 6 people.`},
+      {s:'#p-boss',t:'Your to-do list',b:'Your chief of staff tells you the biggest problem each month. Fix the top item. If it says to hire more people, hire them. If it says runway is short, borrow or raise money.'},
+      {s:'#p-hire',t:'Hiring desk',b:'New people apply every month. Green tags are good, red tags are warnings. Blue stars show how many customers they bring in. Press Offer to hire someone. They can say no.'},
+      {s:'#p-pay',t:'Pay your people',b:'Drag a slider to set what each job earns. Keep it at market or higher. Below 90% of market, people quit and candidates turn you down.'},
+      {s:'#p-cust',t:'Your customers',b:'See how many customers you have, how many you won and lost, and where they came from. Keep quality, reputation and morale high.'},
+      {s:'.floor-panel',t:'Watch it live',b:'This is your business, live. Customers come in, get served and leave. Hover over anyone to see who they are. If you are short on staff, a line forms outside and people walk away.'},
+      {s:'#p-fin',t:'Money tools',b:'Borrow from the bank, raise money from investors, press Expand to sell in a new region, or pay a team bonus to cheer everyone up.'},
+      {t:'Decision memos',b:'Sometimes a yellow memo appears at the top with a choice, like a supplier raising prices or a rival poaching your VP. Pick an option before you can play the next month.'},
+      {s:'.top .run',t:'Play your first month',b:'Press Run month to play a month. Then check your to-do list, fix the top problem, and run the next month. You can replay this tour with the Tutorial button.'}
+    ].filter(s=>!s.s||document.querySelector(s.s));
+  }
+  function ensure(){
+    if(hl)return;
+    hl=document.createElement('div');hl.className='tut-hl';hl.hidden=true;
+    card=document.createElement('div');card.className='tut-card';card.hidden=true;card.setAttribute('role','dialog');card.setAttribute('aria-label','Tutorial');
+    document.body.append(hl,card);
+    card.addEventListener('click',e=>{if(e.target.closest('.tut-next'))go(i+1);else if(e.target.closest('.tut-back'))go(i-1);else if(e.target.closest('.tut-skip'))end();});
+    window.addEventListener('resize',place);window.addEventListener('scroll',place,{passive:true});
+    document.addEventListener('keydown',e=>{if(i<0)return;if(e.key==='Escape')end();else if(e.key==='ArrowRight')go(i+1);else if(e.key==='ArrowLeft'&&i>0)go(i-1);});
+  }
+  function start(){if(!S)return;ensure();steps=list();hl.hidden=false;card.hidden=false;go(0);}
+  function end(){i=-1;if(hl){hl.hidden=true;card.hidden=true;}try{localStorage.setItem('co-tut','1');}catch(e){}}
+  function go(n){
+    if(n<0)n=0;if(n>=steps.length){end();return;}i=n;const s=steps[i],last=i===steps.length-1;
+    card.innerHTML=`<span class="lbl">Tutorial · ${i+1} of ${steps.length}</span><h3>${esc(s.t)}</h3><p>${esc(s.b)}</p>
+      <div class="tut-btns"><button class="btn sm tut-skip">Skip tour</button><span class="tut-nav"><button class="btn sm tut-back" ${i?'':'disabled'}>Back</button><button class="btn sm memo tut-next">${last?'Start playing':'Next'}</button></span></div>`;
+    const el=s.s&&document.querySelector(s.s);
+    if(el&&!el.closest('.top')){const hdr=(document.querySelector('.top')||{offsetHeight:0}).offsetHeight,r=el.getBoundingClientRect();
+      const y=r.height>innerHeight*.5?r.top+scrollY-hdr-16:r.top+scrollY-Math.max(hdr+16,(innerHeight-r.height)/2-60);
+      window.scrollTo({top:Math.max(0,y),behavior:reduce?'auto':'smooth'});}
+    place();card.querySelector('.tut-next').focus({preventScroll:true});
+  }
+  function place(){
+    if(i<0||!card||card.hidden)return;
+    if(!S){end();return;}
+    const s=steps[i],el=s.s&&document.querySelector(s.s),vw=innerWidth,vh=innerHeight,cw=Math.min(380,vw-24);
+    card.style.width=cw+'px';const ch=card.offsetHeight;
+    if(!el){Object.assign(hl.style,{left:vw/2+'px',top:vh/2+'px',width:'0px',height:'0px'});card.style.left=(vw-cw)/2+'px';card.style.top=Math.max(12,(vh-ch)/2)+'px';return;}
+    const r=el.getBoundingClientRect(),p=6;
+    Object.assign(hl.style,{left:r.left-p+'px',top:r.top-p+'px',width:r.width+2*p+'px',height:r.height+2*p+'px'});
+    let top=r.bottom+p+12+ch<vh-8?r.bottom+p+12:r.top-p-12-ch>8?r.top-p-12-ch:vh-ch-12;
+    card.style.top=Math.max(8,top)+'px';card.style.left=clamp(r.left+r.width/2-cw/2,12,vw-cw-12)+'px';
+  }
+  return {start,end,refresh:place,seen};
+})();
+
+function render(){
+  const app=document.getElementById('app');
+  if(!S){Floor.stop();Tut.refresh();app.innerHTML=setupView();return;}
+  const keepSel=(document.getElementById('post-role')||{}).value;
+  const st=deptStats(S),pr=preview();
+  app.innerHTML=tickBar()+`<main class="wrap">${memoView()}${wonView()}${floorView()}
+    <div class="grid"><div class="col">${orgView(st,pr)}</div><div class="col">${leverView(pr)}${bossView(st,pr)}${customersView()}</div></div>
+    <div class="hr"><div class="col">${hiringView()}</div><div class="col">${payView()}</div></div>
+    <div class="lower"><div class="col">${chartView()}${financeView()}</div><div class="col">${msView()}${logView()}</div></div>
+    ${howView()}</main>`;
+  if(floorOpen&&hasFloor())Floor.mount(document.getElementById('floor-slot'));Floor.update(S,pr,floorOpen&&hasFloor());
+  Tut.refresh();
+  const sel=document.getElementById('post-role');if(sel&&keepSel){const o=sel.querySelector(`option[value="${keepSel}"]`);if(o&&!o.disabled)sel.value=keepSel;}
+}
+
+/* ---------- wiring ---------- */
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.disabled)return;
+  if(b.dataset.act==='post-sel'){const v=(document.getElementById('post-role')||{}).value;if(v)act('post:'+v);return;}
+  act(b.dataset.act);});
+document.addEventListener('change',e=>{
+  if(e.target.name==='ind'){setupPick=e.target.value;const c=document.getElementById('custom-fields');if(c)c.hidden=setupPick!=='custom';}
+  if(S&&(['lv-price','lv-mkt','lv-rd'].includes(e.target.id)||e.target.id.startsWith('pay-'))){save();render();}
+});
+document.addEventListener('input',e=>{
+  if(!S)return;const id=e.target.id;
+  if(id==='lv-price'){S.price=roundPrice(+e.target.value,S);document.getElementById('o-price').textContent=fmtP(S.price);document.getElementById('h-price').textContent=priceHint(S.ind.price*S.mods.refMult);}
+  else if(id==='lv-mkt'){S.mkt=tToSpend(+e.target.value,300000);document.getElementById('o-mkt').textContent=fmt$(S.mkt)+'/mo';}
+  else if(id==='lv-rd'){S.rd=tToSpend(+e.target.value,150000);document.getElementById('o-rd').textContent=fmt$(S.rd)+'/mo';}
+  else if(id.startsWith('pay-')){const k=id.slice(4);S.pay[k]=+e.target.value;const c=(payGroups(S).find(g=>g[0]===k)||[0,0])[1];
+    document.getElementById('o-pay-'+k).textContent=fmt$(S.pay[k]);document.getElementById('c-pay-'+k).textContent=fmt$(S.pay[k]*c)+'/mo total';}
+  else return;
+  document.getElementById('proj').innerHTML=projHTML(preview());
+});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!S&&e.target.id==='co-name'){e.preventDefault();startGame();}});
+
+function start(data){S=migrate(data&&data.s)||load();render();if(S&&!Tut.seen())setTimeout(Tut.start,400);}
+window.__co={get S(){return S;},act,runMonth,verdict:c=>verdict(S,c)};
+if(window.claude?.hot&&typeof window.claude.hot.snapshot==='function')window.claude.hot.snapshot(()=>({s:S}));
+window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
+})();
+</script>
+
+</body></html>
