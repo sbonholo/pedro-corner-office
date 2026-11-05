@@ -273,6 +273,21 @@ canvas.floor{display:block;width:100%;min-width:720px;aspect-ratio:1000/430;heig
 .tut-card .btn.memo:hover:not(:disabled){color:var(--memo);filter:none}
 .tut-card .btn:focus-visible{outline-color:var(--memo-ink)}
 @media (prefers-reduced-motion: reduce){.tut-hl{transition:none}}
+/* ---------- phones / touch: 44px tap targets, 12px minimum text ---------- */
+@media (max-width:600px),(pointer:coarse){
+  .btn,.btn.sm{min-height:44px}
+  .btn.sm{min-width:44px;padding:4px 12px}
+  .step button{min-width:44px;min-height:44px}
+  .step output{min-width:32px}
+  input[type=range]{height:44px;margin-block:0}
+  .post select,.field input{min-height:44px;font-size:16px}
+  .post{flex:1 1 100%;min-width:0}
+  .post select{flex:1 1 0;min-width:0;width:100%}
+  details.how summary{padding-block:11px}
+  .eyebrow,.lbl,.hint,.dept .out,.chip,.more,.rl small,.step .x5,.legend,.voice span,.ms li i,.log li span,.ind .p,.verdict,.stars span,.tr,.payrow .meta,.pill,.talent{font-size:12px}
+  .more{line-height:1.2}
+  .chart text{font-size:13px}
+}
 </style>
 </head>
 <body>
@@ -281,6 +296,7 @@ canvas.floor{display:block;width:100%;min-width:720px;aspect-ratio:1000/430;heig
 
 <script>
 (()=>{
+const NARROW=matchMedia('(max-width:600px)');
 const D=['sales','ops','product','support'];
 const DN={sales:'Sales',ops:'Operations',product:'Product',support:'Support'};
 const SAL={sales:4500,ops:3800,product:7000,support:3500};
@@ -732,7 +748,7 @@ function setupView(){
   <fieldset class="inds"><legend class="lbl">What do you sell?</legend>${cards}</fieldset>
   <div class="custom" id="custom-fields" ${setupPick==='custom'?'':'hidden'}>
     <div class="field"><label class="lbl" for="cu-product">Product</label><input id="cu-product" maxlength="40" placeholder="handmade candles" value="handmade candles"></div>
-    <div class="field"><label class="lbl" for="cu-price">Price per unit ($)</label><input id="cu-price" type="number" min="1" max="100000" value="24"></div>
+    <div class="field"><label class="lbl" for="cu-price">Price per unit ($)</label><input id="cu-price" type="number" inputmode="decimal" min="1" max="100000" step="any" value="24"></div>
   </div>
   <div><button class="btn memo run" data-act="start">Open for business</button></div>
   <ul class="rules">
@@ -918,7 +934,7 @@ function financeView(){
 function chartView(){
   const h=S.hist.slice(-24);
   if(h.length<2)return `<section class="panel"><header><h2>Revenue and expenses</h2></header><p class="hint">The trend appears after two months.</p></section>`;
-  const W=640,H=210,l=52,r=14,t=12,b=26,mx=Math.max(1,...h.map(x=>Math.max(x.rev,x.exp)));
+  const nar=NARROW.matches,W=nar?300:640,H=nar?200:210,l=nar?58:52,r=14,t=12,b=nar?28:26,mx=Math.max(1,...h.map(x=>Math.max(x.rev,x.exp)));
   const X=i=>l+(W-l-r)*i/(h.length-1),Y=v=>t+(H-t-b)*(1-v/mx);
   const pr=h.map((x,i)=>`${X(i).toFixed(1)},${Y(x.rev).toFixed(1)}`).join(' '),pe=h.map((x,i)=>`${X(i).toFixed(1)},${Y(x.exp).toFixed(1)}`).join(' ');
   const ticks=[0,.5,1].map(f=>`<line class="grid-l" x1="${l}" x2="${W-r}" y1="${Y(mx*f)}" y2="${Y(mx*f)}"/><text x="${l-6}" y="${Y(mx*f)+3}" text-anchor="end">${fmt$(mx*f)}</text>`).join('');
@@ -1353,6 +1369,7 @@ document.addEventListener('input',e=>{
 });
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!S&&e.target.id==='co-name'){e.preventDefault();startGame();}});
 
+NARROW.addEventListener('change',()=>{if(S)render();});
 function start(data){S=migrate(data&&data.s)||load();render();if(S&&!Tut.seen())setTimeout(Tut.start,400);}
 window.__co={get S(){return S;},act,runMonth,verdict:c=>verdict(S,c)};
 if(window.claude?.hot&&typeof window.claude.hot.snapshot==='function')window.claude.hot.snapshot(()=>({s:S}));
